@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "osmc",
+  "version": "${version}",
+  "name": "OSMC",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/osmc/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "dev.elrol.osmc.Osmc"
+    ]
+  },
+  "mixins": [
+    "osmc.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
