@@ -11,7 +11,7 @@
   "environment": "server",
   "entrypoints": {
     "main": [
-      "dev.elrol.osmc.Osmc"
+      "dev.elrol.osmc.OSMC"
     ]
   },
   "mixins": [

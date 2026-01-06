@@ -53,6 +53,8 @@ dependencies {
     modImplementation(fabricApi.module("fabric-command-api-v2", "0.104.0+1.21.1"))
 
     modImplementation("com.cobblemon:fabric:${cobblemonVersion}+${minecraftVersion}")
+
+    implementation("net.objecthunter:exp4j:0.4.8")
 }
 
 tasks.processResources {

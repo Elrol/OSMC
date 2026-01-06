@@ -1,16 +1,12 @@
 package dev.elrol.osmc.libs;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.llamalad7.mixinextras.expression.impl.ast.expressions.IdentifierExpression;
-import dev.elrol.osmc.data.skills.ISkillData;
 import dev.elrol.osmc.data.skills.SkillDataType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.World;
 
 import java.io.File;
 
@@ -26,6 +22,9 @@ public class OSMCConstants {
 
     public static final File OSMC_DATA_DIR = new File(ROOT_DIR, "OSMC");
     public static final File PLAYER_DATA_DIR = new File(OSMC_DATA_DIR, "player_data");
+
+    public static final String MINING_ID = "mining";
+    public static final String WOODCUTTING_ID = "woodcutting";
 
     public static Gson makeGSON() {
         return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();

@@ -1,9 +1,10 @@
 package dev.elrol.osmc.libs;
 
 import com.google.gson.Gson;
-import dev.elrol.osmc.Osmc;
+import com.google.gson.JsonElement;
+import dev.elrol.osmc.OSMC;
 import net.fabricmc.loader.api.FabricLoader;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileReader;
@@ -11,19 +12,19 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class JsonUtils {
+    private static final Gson GSON = OSMCConstants.makeGSON();
 
-    public static void saveToJson(File dir, String name, Object obj) {
-        Gson GSON = OSMCConstants.makeGSON();
+    public static void saveToJson(File dir, String name, JsonElement obj) {
         File file = new File(dir, name);
 
         if(dir.mkdirs()) {
-            Osmc.LOGGER.warn("{} directory for OSMC created. If this happens more than once, there is an issue.", dir);
+            OSMC.LOGGER.warn("{} directory for OSMC created. If this happens more than once, there is an issue.", dir);
         }
 
         if(!file.exists()) {
             try {
                 if(file.createNewFile()) {
-                    Osmc.LOGGER.warn("New file {} created.", name);
+                    OSMC.LOGGER.warn("New file {} created.", name);
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -33,26 +34,23 @@ public class JsonUtils {
         try(FileWriter writer = new FileWriter(file)) {
             GSON.toJson(obj, writer);
             if(FabricLoader.getInstance().isDevelopmentEnvironment()) {
-                Osmc.LOGGER.info("Saved File {}", name);
+                OSMC.LOGGER.info("Saved File {}", name);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @NotNull
-    @SuppressWarnings("unchecked")
-    public static <T> T loadFromJson(File dir, String name, T defaultObject) {
+    public static JsonElement loadFromJson(File dir, String name, @Nullable JsonElement defaultJson) {
         File file = new File(dir, name);
 
-        if(file.exists()) {
+        if(file.exists() && file.length() > 0) {
             try(FileReader reader = new FileReader(file)) {
-                Gson GSON = OSMCConstants.makeGSON();
-                T obj = GSON.fromJson(reader, (Class<T>) defaultObject.getClass());
+                JsonElement obj = GSON.fromJson(reader, JsonElement.class);
 
-                if(obj != null) {
-                    if(Osmc.CONFIG.isDebug) {
-                        Osmc.LOGGER.info("Loaded File {}", name);
+                if(obj != null && !obj.isJsonNull()) {
+                    if(OSMC.CONFIG.isDebug) {
+                        OSMC.LOGGER.info("Loaded File {}", name);
                     }
                     return obj;
                 }
@@ -61,8 +59,8 @@ public class JsonUtils {
             }
         }
 
-        saveToJson(dir, name, defaultObject);
-        return defaultObject;
+        if(defaultJson != null) saveToJson(dir, name, defaultJson);
+        return defaultJson;
 
     }
 }

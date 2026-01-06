@@ -21,6 +21,7 @@ out/
 
 # --- Minecraft/Fabric Specific ---
 run/
+runServer/
 .fabric/
 /.gradle-architecture-test-report
 
