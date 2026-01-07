@@ -1,83 +1,81 @@
 package dev.elrol.osmc.registries;
 
 import com.google.gson.JsonElement;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
-import com.mojang.serialization.MapCodec;
 import dev.elrol.osmc.OSMC;
-import dev.elrol.osmc.data.ExpGain;
-import dev.elrol.osmc.data.skills.AbstractSkill;
-import dev.elrol.osmc.data.skills.BlockBreakSkill;
-import dev.elrol.osmc.data.skills.MiningSkill;
-import dev.elrol.osmc.data.skills.WoodcuttingSkill;
+import dev.elrol.osmc.data.Skill;
+import dev.elrol.osmc.data.exp.BlockBreakExpSource;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
+import net.minecraft.util.Identifier;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class SkillRegistry {
-
-    private static Map<String, AbstractSkill> SKILL_MAP = new HashMap<>();
+    // Map of all loaded skills
+    private static Map<Identifier, Skill> SKILL_MAP = new HashMap<>();
 
     public static void init(){
-        register(new MiningSkill());
-        register(new WoodcuttingSkill());
+        load();
+
+        if(SKILL_MAP.isEmpty()) {
+            register(new Skill(OSMCConstants.osmcID("farming")));
+            register(new Skill(OSMCConstants.osmcID("mining")));
+            register(new Skill(OSMCConstants.osmcID("woodcutting")));
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T extends AbstractSkill> T load(T skillData) {
-        MapCodec<T> codec = (MapCodec<T>) skillData.getCodec();
-        JsonElement defaultJson = codec.codec().encodeStart(JsonOps.INSTANCE, skillData).getOrThrow();
-        JsonElement json = JsonUtils.loadFromJson(OSMCConstants.SKILL_CONFIG_DIR, skillData.getID() + ".json", defaultJson);
-        return codec.codec().parse(JsonOps.INSTANCE, json)
-                .resultOrPartial(OSMC.LOGGER::error).orElse(skillData);
+    public static void load() {
+        SKILL_MAP.clear();
+        File[] files = OSMCConstants.SKILL_CONFIG_DIR.listFiles(file -> file.getName().endsWith(".json"));
+        if(files == null) return;
+
+        for (File file : files) {
+            JsonElement json = JsonUtils.loadFromJson(OSMCConstants.SKILL_CONFIG_DIR, file.getName(), null);
+
+            if(json != null) {
+                Skill.CODEC.parse(JsonOps.INSTANCE, json)
+                        .resultOrPartial(OSMC.LOGGER::error)
+                        .ifPresent(SkillRegistry::register);
+
+            } else {
+                OSMC.LOGGER.error("Skill failed to load from: {}", file);
+            }
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends AbstractSkill> void save(T skill) {
-        MapCodec<T> codec = (MapCodec<T>) skill.getCodec();
-        JsonElement json = codec.codec().encodeStart(JsonOps.INSTANCE, skill).getOrThrow();
-        JsonUtils.saveToJson(OSMCConstants.SKILL_CONFIG_DIR, skill.getID() + ".json", json);
+    public static void save(Skill skill) {
+        Codec<Skill> codec = Skill.CODEC;
+        JsonElement json = codec.encodeStart(JsonOps.INSTANCE, skill).getOrThrow();
+        JsonUtils.saveToJson(OSMCConstants.SKILL_CONFIG_DIR, skill.getID().getPath() + ".json", json);
     }
 
     public static void save() {
         SKILL_MAP.forEach((id, skill) -> save(skill));
     }
 
-    private static <T extends AbstractSkill> void register(T skillData) {
+    private static void register(Skill skill) {
         if(SKILL_MAP == null) SKILL_MAP = new HashMap<>();
-        T skill = load(skillData);
-        if(skill instanceof BlockBreakSkill breakSkill) {
-            Map<String, ExpGain> expMap = breakSkill.getExpGainMap();
-            if(expMap.isEmpty()) {
-                breakSkill.addExpGain(Blocks.WHITE_WOOL, 1, 1);
-                save(breakSkill);
-            }
+
+        if(skill.getExpSources().isEmpty()) {
+            BlockBreakExpSource source = new BlockBreakExpSource(1);
+            source.addTarget(Blocks.WHITE_WOOL);
+            skill.addExpSource(source);
         }
+        if(skill.getGlobalChanceDrops().isEmpty()) skill.addGlobalDrop(Identifier.ofVanilla("string"), 0.1f);
+
         SKILL_MAP.put(skill.getID(), skill);
+        save(skill);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends AbstractSkill> T get(String id) {
-        return (T) SKILL_MAP.get(id);
-    }
+    public static Map<Identifier, Skill> getAll() { return SKILL_MAP; }
 
-    public static MiningSkill mining() {
-        return (MiningSkill) SKILL_MAP.get(OSMCConstants.MINING_ID);
-    }
-
-    public static WoodcuttingSkill woodcutting() {
-        return (WoodcuttingSkill) SKILL_MAP.get(OSMCConstants.WOODCUTTING_ID);
-    }
-
-    public static <T extends AbstractSkill> Map<String, T> getSkillsOfType(Class<T> clazz) {
-        return SKILL_MAP.entrySet().stream()
-                .filter(entry -> clazz.isInstance(entry.getValue()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> clazz.cast(entry.getValue())
-                ));
+    public static Skill get(Identifier id) {
+        if(!SKILL_MAP.containsKey(id)) register(new Skill(id));
+        return SKILL_MAP.get(id);
     }
 }

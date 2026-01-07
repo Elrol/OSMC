@@ -19,6 +19,7 @@ public class PlayerDataRegistry {
     private static final Map<UUID, PlayerSkillData> PLAYER_SKILL_DATA_MAP = new ConcurrentHashMap<>();
 
     public static void init(){
+        PLAYER_SKILL_DATA_MAP.clear();
         load();
     }
 

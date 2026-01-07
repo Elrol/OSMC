@@ -41,6 +41,7 @@ public class JsonUtils {
         }
     }
 
+    @Nullable
     public static JsonElement loadFromJson(File dir, String name, @Nullable JsonElement defaultJson) {
         File file = new File(dir, name);
 

@@ -2,9 +2,8 @@ package dev.elrol.osmc;
 
 import dev.elrol.osmc.config.OSMCConfig;
 import dev.elrol.osmc.libs.OSMCConstants;
-import dev.elrol.osmc.registries.OSMCEventRegistry;
+import dev.elrol.osmc.registries.ExpSourceTypeRegistry;import dev.elrol.osmc.registries.OSMCEventRegistry;
 import dev.elrol.osmc.registries.PlayerDataRegistry;
-import dev.elrol.osmc.registries.SkillDataTypeRegistry;
 import dev.elrol.osmc.registries.SkillRegistry;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -18,7 +17,7 @@ public class OSMC implements ModInitializer {
     @Override
     public void onInitialize() {
         CONFIG = CONFIG.load();
-        SkillDataTypeRegistry.init();
+        ExpSourceTypeRegistry.init();
         SkillRegistry.init();
 
         PlayerDataRegistry.init();
