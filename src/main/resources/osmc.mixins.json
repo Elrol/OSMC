@@ -4,6 +4,9 @@
   "package": "dev.elrol.osmc.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "EnchantmentScreenHandlerMixin",
+    "LivingEntityMixin",
+    "PotionItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1

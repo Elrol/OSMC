@@ -1,11 +1,14 @@
 package dev.elrol.osmc.registries;
 
+import com.cobblemon.mod.common.Cobblemon;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.BlockBreakExpSource;
+import dev.elrol.osmc.data.exp.BlockInteractionExpSource;
+import dev.elrol.osmc.data.exp.ConsumeFoodExpSource;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
@@ -46,6 +49,7 @@ public class SkillRegistry {
                 OSMC.LOGGER.error("Skill failed to load from: {}", file);
             }
         }
+        register(getExampleSkill());
     }
 
     public static void save(Skill skill) {
@@ -68,8 +72,29 @@ public class SkillRegistry {
         }
         if(skill.getGlobalChanceDrops().isEmpty()) skill.addGlobalDrop(Identifier.ofVanilla("string"), 0.1f);
 
-        SKILL_MAP.put(skill.getID(), skill);
+        if(!skill.getID().equals(OSMCConstants.osmcID("example"))) SKILL_MAP.put(skill.getID(), skill);
         save(skill);
+    }
+
+    private static Skill getExampleSkill() {
+        Skill skill = new Skill(OSMCConstants.osmcID("example_skill"));
+
+        // Block Break Exp Source
+        BlockBreakExpSource bbSource = new BlockBreakExpSource(1);
+        bbSource.addTarget(Blocks.DIRT);
+        bbSource.addTarget(Identifier.ofVanilla("logs"));
+        bbSource.addRequiredProperty("axis", "y");
+        skill.addExpSource(bbSource);
+
+        // Block Interact Exp Source
+        BlockInteractionExpSource biSource = new BlockInteractionExpSource(1);
+        biSource.addTarget(Identifier.of(Cobblemon.MODID, "apricorns"));
+        biSource.addRequiredProperty("age", "3");
+        skill.addExpSource(biSource);
+
+        //TODO finish adding example sources
+
+        return skill;
     }
 
     public static Map<Identifier, Skill> getAll() { return SKILL_MAP; }

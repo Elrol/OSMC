@@ -73,6 +73,10 @@ public class BlockInteractionExpSource extends ExpSource {
         targets.add(Either.right(TagKey.of(Registries.BLOCK.getKey(), id)));
     }
 
+    public void addRequiredProperty(String key, String value) {
+        requiredProperties.put(key, value);
+    }
+
     @Override
     public ExpSourceType<?> getType() {
         return ExpSourceTypeRegistry.BLOCK_INTERACT_EXP_SOURCE;

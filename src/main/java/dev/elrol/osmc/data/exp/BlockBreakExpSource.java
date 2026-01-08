@@ -54,6 +54,10 @@ public class BlockBreakExpSource extends ExpSource {
         targets.add(Either.right(TagKey.of(Registries.BLOCK.getKey(), id)));
     }
 
+    public void addRequiredProperty(String key, String value) {
+        requiredProperties.put(key, value);
+    }
+
     public boolean hasProperties(BlockState state) {
         return requiredProperties.entrySet().stream().allMatch(entry -> {
             String key = entry.getKey();

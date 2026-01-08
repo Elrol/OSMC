@@ -31,6 +31,15 @@ public class OSMCConstants {
     // Exp Source Type IDs
     public static final String BLOCK_BREAK_EXP_ID = "block_break";
     public static final String BLOCK_INTERACT_EXP_ID = "block_interact";
+    public static final String CONSUME_FOOD_EXP_ID = "consume_food";
+    public static final String CONSUME_POTION_EXP_ID = "consume_potion";
+    public static final String CRAFT_EXP_ID = "craft";
+    public static final String ENCHANT_EXP_ID = "enchant";
+    public static final String ENTITY_INTERACTION_EXP_ID = "entity_interact";
+    public static final String ENTITY_KILL_EXP_ID = "entity_kill";
+    public static final String ITEM_USE_EXP_ID = "item_use";
+    public static final String POTION_BREW_EXP_ID = "potion_brew";
+    public static final String VILLAGER_TRADE_EXP_ID = "villager_trade";
 
     public static Gson makeGSON() {
         return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
