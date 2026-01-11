@@ -16,18 +16,21 @@ public class OSMCConfig {
 
     public static final Codec<OSMCConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.fieldOf("isDebug").forGetter(data -> data.isDebug),
-            Codec.INT.fieldOf("maxLevel").forGetter(data -> data.maxLevel)
-    ).apply(instance, (isDebug, maxLevel) -> {
+            Codec.INT.fieldOf("maxLevel").forGetter(data -> data.maxLevel),
+            Codec.INT.fieldOf("autosave").forGetter(data -> data.autoSave)
+    ).apply(instance, (isDebug, maxLevel, autosave) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
         data.maxLevel = maxLevel;
+        data.autoSave = autosave;
 
         return data;
     }));
 
     public boolean isDebug = false;
     public int maxLevel = 99;
+    public int autoSave = 5;
 
     public void save() {
         DataResult<JsonElement> jsonResult = CODEC.encodeStart(JsonOps.INSTANCE, this);

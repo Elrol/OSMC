@@ -26,10 +26,9 @@ public class BlockInteractionExpSource extends ExpSource {
             TagKey.codec(RegistryKeys.BLOCK)
     );
 
-    public static final MapCodec<BlockInteractionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            TARGET_CODEC.listOf().fieldOf("targets").forGetter(BlockInteractionExpSource::getTargets),
-            Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockInteractionExpSource::getRequiredProperties)
+    public static final MapCodec<BlockInteractionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(TARGET_CODEC.listOf().fieldOf("targets").forGetter(BlockInteractionExpSource::getTargets))
+            .and(Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockInteractionExpSource::getRequiredProperties)
     ).apply(instance, (expGain, targets, requiredProperties) -> {
         BlockInteractionExpSource data = new BlockInteractionExpSource(expGain);
         data.targets.addAll(targets);

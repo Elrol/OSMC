@@ -12,9 +12,8 @@ import java.util.List;
 
 public class VillagerTradeExpSource extends ExpSource {
 
-    public static final MapCodec<VillagerTradeExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            ItemStack.CODEC.listOf().fieldOf("items").forGetter(VillagerTradeExpSource::getItems)
+    public static final MapCodec<VillagerTradeExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(ItemStack.CODEC.listOf().fieldOf("items").forGetter(VillagerTradeExpSource::getItems)
     ).apply(instance, (expGain, items) -> {
         VillagerTradeExpSource data = new VillagerTradeExpSource(expGain);
         data.items.addAll(items);

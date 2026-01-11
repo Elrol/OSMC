@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.PotionItem;
 
 public class LivingConsumeEvent {
 
@@ -16,9 +17,9 @@ public class LivingConsumeEvent {
     );
 
     public static final Event<ConsumePotionCallback> POTION = EventFactory.createArrayBacked(ConsumePotionCallback.class,
-            (listeners) -> (living, potion) -> {
+            (listeners) -> (living, item, potion) -> {
                 for (ConsumePotionCallback listener : listeners) {
-                    listener.consumed(living, potion);
+                    listener.consumed(living, item, potion);
                 }
             });
 
@@ -29,7 +30,7 @@ public class LivingConsumeEvent {
 
     @FunctionalInterface
     public interface ConsumePotionCallback {
-        void consumed(LivingEntity entity, ItemStack stack);
+        void consumed(LivingEntity entity, ItemStack stack, PotionItem potion);
     }
 
 }

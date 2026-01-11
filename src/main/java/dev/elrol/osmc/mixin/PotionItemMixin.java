@@ -19,6 +19,6 @@ public class PotionItemMixin {
 
     @Inject(method = "finishUsing", at = @At("RETURN"))
     public void osmc$finishUsing(ItemStack stack, World world, LivingEntity user, CallbackInfoReturnable<ItemStack> cir) {
-        LivingConsumeEvent.POTION.invoker().consumed(user, stack);
+        LivingConsumeEvent.POTION.invoker().consumed(user, stack, getThis());
     }
 }

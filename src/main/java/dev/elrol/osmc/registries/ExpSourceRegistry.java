@@ -9,18 +9,16 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.Item;
 import net.minecraft.potion.Potion;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +27,7 @@ public class ExpSourceRegistry {
     private static final Map<Block,                             List<BoundSource<BlockBreakExpSource>>>                 BLOCK_BREAK_CACHE               = new Reference2ObjectOpenHashMap<>();
     private static final Map<Block,                             List<BoundSource<BlockInteractionExpSource>>>           BLOCK_INTERACT_CACHE            = new Reference2ObjectOpenHashMap<>();
     private static final Map<Item,                              List<BoundSource<ConsumeFoodExpSource>>>                CONSUME_FOOD_CACHE              = new Reference2ObjectOpenHashMap<>();
-    private static final Map<Item,                              List<BoundSource<ConsumePotionExpSource>>>              CONSUME_POTION_CACHE            = new Reference2ObjectOpenHashMap<>();
+    private static final Map<RegistryEntry<StatusEffect>,       List<BoundSource<ConsumePotionExpSource>>>              CONSUME_POTION_CACHE            = new Reference2ObjectOpenHashMap<>();
     private static final Map<Item,                              List<BoundSource<CraftExpSource>>>                      CRAFT_CACHE                     = new Reference2ObjectOpenHashMap<>();
     private static final Map<RegistryEntry<Enchantment>,        List<BoundSource<EnchantExpSource>>>                    ENCHANT_CACHE                   = new Reference2ObjectOpenHashMap<>();
     private static final Map<EntityType<?>,                     List<BoundSource<EntityInteractionExpSource>>>          ENTITY_INTERACT_CACHE           = new Reference2ObjectOpenHashMap<>();
@@ -68,8 +66,8 @@ public class ExpSourceRegistry {
     }
 
     @NotNull
-    public static List<BoundSource<ConsumePotionExpSource>> getConsumePotion(Item item) {
-        return CONSUME_POTION_CACHE.getOrDefault(item, new ArrayList<>());
+    public static List<BoundSource<ConsumePotionExpSource>> getConsumePotion(RegistryEntry<StatusEffect> effect) {
+        return CONSUME_POTION_CACHE.getOrDefault(effect, new ArrayList<>());
     }
 
     @NotNull
@@ -107,7 +105,7 @@ public class ExpSourceRegistry {
         return VILLAGER_TRADE_CACHE.getOrDefault(item, new ArrayList<>());
     }
 
-    public static void rebuild(Map<Identifier, Skill> skills) {
+    public static void rebuild(Map<Identifier, Skill> skills, RegistryWrapper.WrapperLookup registryManager) {
         clear();
 
         skills.forEach((id, skill) -> {
@@ -123,13 +121,14 @@ public class ExpSourceRegistry {
                     case ConsumeFoodExpSource consumeFood -> consumeFood.getItems().forEach(item ->
                             addBoundSource(CONSUME_FOOD_CACHE, item.getItem(), consumeFood, id));
 
-                    case ConsumePotionExpSource consumePotion -> consumePotion.getItems().forEach(item ->
-                            addBoundSource(CONSUME_POTION_CACHE, item.getItem(), consumePotion, id));
+                    case ConsumePotionExpSource consumePotion -> consumePotion.getEffects().forEach(effect ->
+                            addBoundSource(CONSUME_POTION_CACHE, effect, consumePotion, id));
 
                     case CraftExpSource craft -> craft.getItems().forEach(item ->
                             addBoundSource(CRAFT_CACHE, item.getItem(), craft, id));
 
-                    //case EnchantExpSource enchant -> enchants
+                    case EnchantExpSource enchant -> enchant.getTargets().forEach(enchantment ->
+                            indexEither(enchantment, registryManager.getWrapperOrThrow(RegistryKeys.ENCHANTMENT), enchant, id, ENCHANT_CACHE));
 
                     case EntityInteractionExpSource entityInteract -> entityInteract.getEntities().forEach(entity ->
                             addBoundSource(ENTITY_INTERACT_CACHE, entity, entityInteract, id));
@@ -150,6 +149,15 @@ public class ExpSourceRegistry {
                 }
             }
         });
+    }
+
+    private static <T, S extends ExpSource> void indexEither(Either<RegistryEntry<T>, TagKey<T>> target, RegistryWrapper.Impl<T> registry, S source, Identifier id, Map<RegistryEntry<T>, List<BoundSource<S>>> cache) {
+        target.ifLeft(obj -> addBoundSource(cache, obj, source, id))
+                .ifRight(tagKey -> registry.getOptional(tagKey).ifPresent(entryList -> {
+                    for(RegistryEntry<T> entry : entryList) {
+                        addBoundSource(cache, entry, source, id);
+                    }
+                }));
     }
 
     private static <U, T extends ExpSource> void addBoundSource(Map<U, List<BoundSource<T>>> cache, U key, T source, Identifier id) {

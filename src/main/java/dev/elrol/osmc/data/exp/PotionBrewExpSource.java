@@ -14,9 +14,8 @@ import java.util.List;
 
 public class PotionBrewExpSource extends ExpSource {
 
-    public static final MapCodec<PotionBrewExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            Registries.POTION.getEntryCodec().listOf().fieldOf("potions").forGetter(PotionBrewExpSource::getPotions)
+    public static final MapCodec<PotionBrewExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(Registries.POTION.getEntryCodec().listOf().fieldOf("potions").forGetter(PotionBrewExpSource::getPotions)
     ).apply(instance, (expGain, potions) -> {
         PotionBrewExpSource data = new PotionBrewExpSource(expGain);
         data.potions.addAll(potions);

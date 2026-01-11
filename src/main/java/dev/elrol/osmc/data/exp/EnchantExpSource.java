@@ -25,10 +25,9 @@ public class EnchantExpSource extends ExpSource {
             TagKey.codec(RegistryKeys.ENCHANTMENT)
     );
 
-    public static final MapCodec<EnchantExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            Codec.STRING.fieldOf("expFormula").forGetter(EnchantExpSource::getFormula),
-            TARGET_CODEC.listOf().fieldOf("targets").forGetter(EnchantExpSource::getTargets)
+    public static final MapCodec<EnchantExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(Codec.STRING.fieldOf("expFormula").forGetter(EnchantExpSource::getFormula))
+            .and(TARGET_CODEC.listOf().fieldOf("targets").forGetter(EnchantExpSource::getTargets)
     ).apply(instance, (expGain, expFormula, targets) -> {
         EnchantExpSource data = new EnchantExpSource(expGain);
         data.expFormula = expFormula;

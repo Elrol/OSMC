@@ -9,9 +9,12 @@ import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.BlockBreakExpSource;
 import dev.elrol.osmc.data.exp.BlockInteractionExpSource;
 import dev.elrol.osmc.data.exp.ConsumeFoodExpSource;
+import dev.elrol.osmc.data.exp.ConsumePotionExpSource;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 
 import java.io.File;
@@ -49,7 +52,7 @@ public class SkillRegistry {
                 OSMC.LOGGER.error("Skill failed to load from: {}", file);
             }
         }
-        register(getExampleSkill());
+        if(contains(OSMCConstants.osmcID("example_skill"))) register(getExampleSkill());
     }
 
     public static void save(Skill skill) {
@@ -72,7 +75,7 @@ public class SkillRegistry {
         }
         if(skill.getGlobalChanceDrops().isEmpty()) skill.addGlobalDrop(Identifier.ofVanilla("string"), 0.1f);
 
-        if(!skill.getID().equals(OSMCConstants.osmcID("example"))) SKILL_MAP.put(skill.getID(), skill);
+        if(skill.isEnabled()) SKILL_MAP.put(skill.getID(), skill);
         save(skill);
     }
 
@@ -92,6 +95,14 @@ public class SkillRegistry {
         biSource.addRequiredProperty("age", "3");
         skill.addExpSource(biSource);
 
+        // Consume Food Exp Source
+        ConsumeFoodExpSource cfSource = new ConsumeFoodExpSource(1);
+        cfSource.addItem(new ItemStack(Items.APPLE));
+        skill.addExpSource(cfSource);
+
+        // Consume Potion Exp Source
+        ConsumePotionExpSource cpSource = new ConsumePotionExpSource(1);
+        //cpSource.addEffect(Registries.STATUS_EFFECT.get);
         //TODO finish adding example sources
 
         return skill;
@@ -102,5 +113,9 @@ public class SkillRegistry {
     public static Skill get(Identifier id) {
         if(!SKILL_MAP.containsKey(id)) register(new Skill(id));
         return SKILL_MAP.get(id);
+    }
+
+    public static boolean contains(Identifier id) {
+        return SKILL_MAP.containsKey(id);
     }
 }

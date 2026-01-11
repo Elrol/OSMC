@@ -1,5 +1,6 @@
 package dev.elrol.osmc.data.exp.abstractexps;
 
+import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -9,10 +10,6 @@ public abstract class ExpSource {
 
     public static final Codec<ExpSource> CODEC = ExpSourceType.REGISTRY.getCodec()
             .dispatch("type", ExpSource::getType, ExpSourceType::codec);
-
-    public static <T extends ExpSource> RecordCodecBuilder<T, Integer> commonCodec() {
-        return Codec.INT.fieldOf("expGain").forGetter(ExpSource::getExpGain);
-    }
 
     protected int expGain;
 
@@ -24,4 +21,10 @@ public abstract class ExpSource {
 
     public abstract ExpSourceType<?> getType();
     public abstract MapCodec<? extends ExpSource> getCodec();
+
+    public static <T extends ExpSource> Products.P1<RecordCodecBuilder.Mu<T>, Integer> getCommonCodec(RecordCodecBuilder.Instance<T> instance) {
+        return instance.group(
+                Codec.INT.fieldOf("expGain").forGetter(ExpSource::getExpGain)
+        );
+    }
 }

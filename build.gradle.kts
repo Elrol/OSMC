@@ -14,7 +14,7 @@ val osmcVersion: String by project
 val cobblemonVersion: String by project
 
 base {
-    archivesName.set(project.property("archives_base_name") as String)
+    archivesName.set("${project.property("archives_base_name")}-${osmcVersion}")
 }
 
 architectury {

@@ -13,9 +13,8 @@ import java.util.List;
 
 public class EntityKillExpSource extends ExpSource {
 
-    public static final MapCodec<EntityKillExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            Registries.ENTITY_TYPE.getCodec().listOf().fieldOf("entities").forGetter(EntityKillExpSource::getEntities)
+    public static final MapCodec<EntityKillExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(Registries.ENTITY_TYPE.getCodec().listOf().fieldOf("entities").forGetter(EntityKillExpSource::getEntities)
     ).apply(instance, (expGain, entities) -> {
         EntityKillExpSource data = new EntityKillExpSource(expGain);
         data.entities.addAll(entities);

@@ -16,10 +16,9 @@ public class BlockBreakExpSource extends ExpSource {
             TagKey.codec(RegistryKeys.BLOCK)
     );
 
-    public static final MapCodec<BlockBreakExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            TARGET_CODEC.listOf().fieldOf("targets").forGetter(BlockBreakExpSource::getTargets),
-            Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockBreakExpSource::getRequiredProperties)
+    public static final MapCodec<BlockBreakExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(TARGET_CODEC.listOf().fieldOf("targets").forGetter(BlockBreakExpSource::getTargets))
+            .and(Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockBreakExpSource::getRequiredProperties)
     ).apply(instance, (expGain, targets, requiredProperties) -> {
         BlockBreakExpSource data = new BlockBreakExpSource(expGain);
         data.targets.addAll(targets);

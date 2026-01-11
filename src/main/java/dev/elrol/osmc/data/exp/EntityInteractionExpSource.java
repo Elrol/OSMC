@@ -13,9 +13,8 @@ import java.util.List;
 
 public class EntityInteractionExpSource extends ExpSource {
 
-    public static final MapCodec<EntityInteractionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            Registries.ENTITY_TYPE.getCodec().listOf().fieldOf("entities").forGetter(EntityInteractionExpSource::getEntities)
+    public static final MapCodec<EntityInteractionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(Registries.ENTITY_TYPE.getCodec().listOf().fieldOf("entities").forGetter(EntityInteractionExpSource::getEntities)
     ).apply(instance, (expGain, entities) -> {
         EntityInteractionExpSource data = new EntityInteractionExpSource(expGain);
         data.entities.addAll(entities);

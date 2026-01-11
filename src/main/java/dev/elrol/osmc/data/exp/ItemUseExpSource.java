@@ -12,9 +12,8 @@ import java.util.List;
 
 public class ItemUseExpSource extends ExpSource {
 
-    public static final MapCodec<ItemUseExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            ItemStack.CODEC.listOf().fieldOf("items").forGetter(ItemUseExpSource::getItems)
+    public static final MapCodec<ItemUseExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(ItemStack.CODEC.listOf().fieldOf("items").forGetter(ItemUseExpSource::getItems)
     ).apply(instance, (expGain, items) -> {
         ItemUseExpSource data = new ItemUseExpSource(expGain);
         data.items.addAll(items);

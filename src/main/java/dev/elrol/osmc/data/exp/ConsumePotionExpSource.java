@@ -1,37 +1,52 @@
 package dev.elrol.osmc.data.exp;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.ExpSourceType;
 import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
 import dev.elrol.osmc.registries.ExpSourceTypeRegistry;
-import net.minecraft.item.ItemStack;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.registry.entry.RegistryEntry;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ConsumePotionExpSource extends ExpSource {
 
-    public static final MapCodec<ConsumePotionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            ItemStack.CODEC.listOf().fieldOf("items").forGetter(ConsumePotionExpSource::getItems)
-    ).apply(instance, (expGain, items) -> {
+    public static final MapCodec<ConsumePotionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(StatusEffect.ENTRY_CODEC.listOf().fieldOf("items").forGetter(ConsumePotionExpSource::getEffects))
+            .and(Codec.STRING.fieldOf("formula").forGetter(ConsumePotionExpSource::getFormula)
+    ).apply(instance, (expGain, effects, formula) -> {
         ConsumePotionExpSource data = new ConsumePotionExpSource(expGain);
-        data.items.addAll(items);
+        data.effects.addAll(effects);
         return data;
     }));
 
-    private final List<ItemStack> items = new ArrayList<>();
+    private final List<RegistryEntry<StatusEffect>> effects = new ArrayList<>();
+    private final String formula;
 
-    protected ConsumePotionExpSource(int expGain) {
+    public ConsumePotionExpSource(int expGain) {
         super(expGain);
+        formula = "exp + duration + amplifier";
     }
 
-    public boolean isValid(ItemStack stack) {
-        return getItems().contains(stack);
+    public ConsumePotionExpSource(int expGain, String formula) {
+        super(expGain);
+        this.formula = formula;
     }
 
-    public List<ItemStack> getItems() { return items; }
+    public boolean isValid(RegistryEntry<StatusEffect> effect) {
+        return getEffects().contains(effect);
+    }
+
+    public void addEffect(RegistryEntry<StatusEffect> effect) {
+        effects.add(effect);
+    }
+
+    public List<RegistryEntry<StatusEffect>> getEffects() { return effects; }
+
+    public String getFormula() { return formula; }
 
     @Override
     public ExpSourceType<?> getType() {

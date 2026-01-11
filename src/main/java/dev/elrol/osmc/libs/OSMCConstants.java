@@ -3,9 +3,16 @@ package dev.elrol.osmc.libs;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.elrol.osmc.data.ExpSourceType;
+import dev.elrol.osmc.data.PlayerSkillData;
+import dev.elrol.osmc.data.Skill;
+import dev.elrol.osmc.registries.PlayerDataRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.io.File;
@@ -45,5 +52,25 @@ public class OSMCConstants {
         return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     }
     public static Identifier osmcID(String id) { return Identifier.of(MODID, id); }
+    public static Text osmcTag() {
+        MutableText tag = Text.empty();
+
+        tag.append(Text.literal("[").formatted(Formatting.GRAY));
+        tag.append(Text.literal("OSMC").formatted(Formatting.AQUA));
+        tag.append(Text.literal("] ").formatted(Formatting.GRAY));
+
+        return tag;
+    }
+
+    public static void sendXpGainMsg(ServerPlayerEntity player, String action, String target, int exp, Skill skill) {
+        PlayerSkillData data = PlayerDataRegistry.get(player.getUuid());
+        PlayerSkillData.SkillExpInfo info = data.getSkillInfo(skill.getID());
+
+        player.sendMessage(Text.empty()
+                .append(Text.literal("[").formatted(Formatting.DARK_GRAY))
+                .append(skill.getTextName())
+                .append(Text.literal("]").formatted(Formatting.DARK_GRAY))
+                .append(Text.literal(" " + action + " " + target + " and got " + exp + "xp. " + info.level() + " [" + info.currentExp() + "/" + info.targetExp() + "]")));
+    }
 
 }

@@ -12,9 +12,8 @@ import java.util.List;
 
 public class CraftExpSource extends ExpSource {
 
-    public static final MapCodec<CraftExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExpSource.commonCodec(),
-            ItemStack.CODEC.listOf().fieldOf("items").forGetter(CraftExpSource::getItems)
+    public static final MapCodec<CraftExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(ItemStack.CODEC.listOf().fieldOf("items").forGetter(CraftExpSource::getItems)
     ).apply(instance, (expGain, items) -> {
         CraftExpSource data = new CraftExpSource(expGain);
         data.items.addAll(items);

@@ -14,7 +14,7 @@ public class PlayerSkillData {
 
     public static Codec<PlayerSkillData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("uuid").forGetter(PlayerSkillData::getUuidString),
-        Codec.unboundedMap(Identifier.CODEC, Codec.LONG).fieldOf("skillExp").forGetter(PlayerSkillData::getSKILL_EXP)
+        Codec.unboundedMap(Identifier.CODEC, Codec.LONG).fieldOf("skillExp").forGetter(PlayerSkillData::getSkillExpMap)
     ).apply(instance, (uuid, skillExp) -> {
         PlayerSkillData data = new PlayerSkillData(UUID.fromString(uuid));
 
@@ -39,7 +39,7 @@ public class PlayerSkillData {
 
     public long getTargetXP(Identifier skillID) {
         Skill skill = SkillRegistry.get(skillID);
-        return Math.round(MathUtils.getTotalXPForLevel(skill.getLevelFormula(), getSkillLevel(skillID) + 1));
+        return Math.round(MathUtils.getTotalXPForLevel(skillID, skill.getLevelFormula(), getSkillLevel(skillID) + 1));
     }
 
     public int getSkillLevel(Identifier skillID) {
@@ -48,7 +48,7 @@ public class PlayerSkillData {
         long xp = getSkillXp(skillID);
 
         while (level < OSMC.CONFIG.maxLevel) {
-            if(xp < MathUtils.getTotalXPForLevel(skill.getLevelFormula(), level + 1)) {
+            if(xp < MathUtils.getTotalXPForLevel(skillID, skill.getLevelFormula(), level + 1)) {
                 break;
             }
             level++;
@@ -60,7 +60,18 @@ public class PlayerSkillData {
         return SKILL_EXP.getOrDefault(skillID, 0L);
     }
 
-    public Map<Identifier, Long> getSKILL_EXP() { return SKILL_EXP; }
+    public SkillExpInfo getSkillInfo(Identifier skillID) {
+        return new SkillExpInfo(
+                getSkillLevel(skillID),
+                getSkillXp(skillID),
+                getTargetXP(skillID)
+        );
+    }
+
+    public Map<Identifier, Long> getSkillExpMap() { return SKILL_EXP; }
     public UUID getUuid() { return uuid; }
     public String getUuidString() { return uuid.toString(); }
+
+    public record SkillExpInfo(int level, long currentExp, long targetExp) {
+    }
 }

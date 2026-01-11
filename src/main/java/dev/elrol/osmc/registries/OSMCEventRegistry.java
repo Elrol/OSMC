@@ -6,17 +6,23 @@ import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.BlockBreakExpSource;
 import dev.elrol.osmc.data.exp.BlockInteractionExpSource;
+import dev.elrol.osmc.data.exp.ConsumePotionExpSource;
 import dev.elrol.osmc.data.exp.EnchantExpSource;
 import dev.elrol.osmc.events.EnchantingEvent;
 import dev.elrol.osmc.events.LivingConsumeEvent;
+import dev.elrol.osmc.libs.MathUtils;
+import dev.elrol.osmc.libs.OSMCConstants;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,15 +30,33 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;import net.minecraft.util.hit.HitResult;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class OSMCEventRegistry {
+
+    private static int ticksSinceSave = 0;
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
 
-        LivingConsumeEvent.POTION.register((living, stack) -> {
+        LivingConsumeEvent.POTION.register((living, stack, potion) -> {
             if(living instanceof ServerPlayerEntity player) {
+                PotionContentsComponent potionContentsComponent = stack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
+                potionContentsComponent.forEachEffect((effect) -> {
+                    PlayerSkillData data = PlayerDataRegistry.get(player.getUuid());
+                    Map<String, Double> variables = new HashMap<>();
+                    variables.put("duration", (double) effect.getDuration());
+                    variables.put("amplifier", (double) effect.getAmplifier());
+
+                    ExpSourceRegistry.getConsumePotion(effect.getEffectType()).forEach(source -> {
+                        ConsumePotionExpSource expSource = source.source();
+                        variables.put("exp", (double) expSource.getExpGain());
+                        double expGained = MathUtils.calculate(expSource.getFormula(), variables);
+                        data.addSkillXp(source.skillID(), (int) expGained);
+                    });
+                });
                 OSMC.LOGGER.warn("Potion was consumed by a player!");
             }
         });
@@ -51,7 +75,6 @@ public class OSMCEventRegistry {
                     data.addSkillXp(source.skillID(), (int) source.source().calculate(entry.getIntValue(), enchantPower, xpSpent));
                 }
             }
-            PlayerDataRegistry.updatePlayerData(data);
         }));
 
         UseBlockCallback.EVENT.register((playerEntity, world, hand, blockHitResult) -> {
@@ -78,7 +101,7 @@ public class OSMCEventRegistry {
                     PlayerDataRegistry.updatePlayerData(data);
                     player.sendMessage(Text.empty()
                             .append(Text.literal("[").formatted(Formatting.DARK_GRAY))
-                            .append(skill.getDisplayName())
+                            .append(skill.getTextName())
                             .append(Text.literal("]").formatted(Formatting.DARK_GRAY))
                             .append(Text.literal(" Interacted with " + block.getName().getString() + " and got " + xpGain + "xp. " + level + " [" + totalXP + "/" + targetXP + "]")));
 
@@ -98,24 +121,30 @@ public class OSMCEventRegistry {
 
                      if(!source.hasProperties(state)) return;
 
-                     int xpGain = source.getExpGain();
-                     long totalXP = data.addSkillXp(bound.skillID(), xpGain);
-                     long targetXP = data.getTargetXP(bound.skillID());
-                     int level = data.getSkillLevel(bound.skillID());
-                     PlayerDataRegistry.updatePlayerData(data);
-                     player.sendMessage(Text.empty()
-                             .append(Text.literal("[").formatted(Formatting.DARK_GRAY))
-                             .append(skill.getDisplayName())
-                             .append(Text.literal("]").formatted(Formatting.DARK_GRAY))
-                             .append(Text.literal(" Mined " + state.getBlock().getName().getString() + " and got " + xpGain + "xp. " + level + " [" + totalXP + "/" + targetXP + "]")));
+                     int expGain = source.getExpGain();
+                     data.addSkillXp(bound.skillID(), expGain);
 
+                     OSMCConstants.sendXpGainMsg(player, "mined", state.getBlock().getName().getString(), expGain, skill);
                  });
              }
              return true;
         });
 
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            ticksSinceSave++;
+
+            int autoSaveDelay = OSMC.CONFIG.autoSave * 1200;
+
+            if(ticksSinceSave >= autoSaveDelay) {
+                ticksSinceSave = 0;
+
+                OSMC.LOGGER.info("Autosaving Data");
+                PlayerDataRegistry.save();
+            }
+        });
+
         ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> {
-            ExpSourceRegistry.rebuild(SkillRegistry.getAll());
+            ExpSourceRegistry.rebuild(SkillRegistry.getAll(), minecraftServer.getRegistryManager());
             OSMC.LOGGER.info("Loading all player skill data");
             PlayerDataRegistry.init();
         });
