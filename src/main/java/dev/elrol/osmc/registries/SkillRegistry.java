@@ -2,40 +2,42 @@ package dev.elrol.osmc.registries;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.google.gson.JsonElement;
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.exp.BlockBreakExpSource;
-import dev.elrol.osmc.data.exp.BlockInteractionExpSource;
-import dev.elrol.osmc.data.exp.ConsumeFoodExpSource;
-import dev.elrol.osmc.data.exp.ConsumePotionExpSource;
+import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.EnchantmentTags;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class SkillRegistry {
     // Map of all loaded skills
     private static Map<Identifier, Skill> SKILL_MAP = new HashMap<>();
 
-    public static void init(){
-        load();
-
-        if(SKILL_MAP.isEmpty()) {
-            register(new Skill(OSMCConstants.osmcID("farming")));
-            register(new Skill(OSMCConstants.osmcID("mining")));
-            register(new Skill(OSMCConstants.osmcID("woodcutting")));
-        }
+    public static void init(MinecraftServer server){
+        load(server);
     }
 
-    public static void load() {
+    public static void load(MinecraftServer server) {
         SKILL_MAP.clear();
         File[] files = OSMCConstants.SKILL_CONFIG_DIR.listFiles(file -> file.getName().endsWith(".json"));
         if(files == null) return;
@@ -46,26 +48,30 @@ public class SkillRegistry {
             if(json != null) {
                 Skill.CODEC.parse(JsonOps.INSTANCE, json)
                         .resultOrPartial(OSMC.LOGGER::error)
-                        .ifPresent(SkillRegistry::register);
+                        .ifPresent(skill -> register(skill, server));
 
             } else {
                 OSMC.LOGGER.error("Skill failed to load from: {}", file);
             }
         }
-        if(contains(OSMCConstants.osmcID("example_skill"))) register(getExampleSkill());
+
+        if(!contains(OSMCConstants.osmcID("example_skill")))
+            SkillRegistry.registerExampleSkill(server);
     }
 
-    public static void save(Skill skill) {
+    public static void save(Skill skill, MinecraftServer server) {
         Codec<Skill> codec = Skill.CODEC;
-        JsonElement json = codec.encodeStart(JsonOps.INSTANCE, skill).getOrThrow();
-        JsonUtils.saveToJson(OSMCConstants.SKILL_CONFIG_DIR, skill.getID().getPath() + ".json", json);
+        RegistryOps<JsonElement> registryOps = server.getRegistryManager().getOps(JsonOps.INSTANCE);
+        codec.encodeStart(registryOps, skill)
+                .ifError(error -> OSMC.LOGGER.error(error.message()))
+                .ifSuccess(json -> JsonUtils.saveToJson(OSMCConstants.SKILL_CONFIG_DIR, skill.getID().getPath() + ".json", json));
     }
 
-    public static void save() {
-        SKILL_MAP.forEach((id, skill) -> save(skill));
+    public static void save(MinecraftServer server) {
+        SKILL_MAP.forEach((id, skill) -> save(skill, server));
     }
 
-    private static void register(Skill skill) {
+    private static void register(Skill skill, MinecraftServer server) {
         if(SKILL_MAP == null) SKILL_MAP = new HashMap<>();
 
         if(skill.getExpSources().isEmpty()) {
@@ -76,10 +82,10 @@ public class SkillRegistry {
         if(skill.getGlobalChanceDrops().isEmpty()) skill.addGlobalDrop(Identifier.ofVanilla("string"), 0.1f);
 
         if(skill.isEnabled()) SKILL_MAP.put(skill.getID(), skill);
-        save(skill);
     }
 
-    private static Skill getExampleSkill() {
+    public static void registerExampleSkill(MinecraftServer server) {
+
         Skill skill = new Skill(OSMCConstants.osmcID("example_skill"));
 
         // Block Break Exp Source
@@ -102,16 +108,48 @@ public class SkillRegistry {
 
         // Consume Potion Exp Source
         ConsumePotionExpSource cpSource = new ConsumePotionExpSource(1);
-        //cpSource.addEffect(Registries.STATUS_EFFECT.get);
+        cpSource.addEffect(StatusEffects.REGENERATION);
+        cpSource.addEffect(StatusEffects.INSTANT_HEALTH);
+        cpSource.addEffect(StatusEffects.SPEED);
+        skill.addExpSource(cpSource);
+
+        // Craft Exp Source
+        CraftExpSource cSource = new CraftExpSource(1);
+        cSource.addItem(new ItemStack(Items.STICK));
+        skill.addExpSource(cSource);
+
+        EnchantExpSource eSource = new EnchantExpSource(1);
+        Optional<RegistryEntry.Reference<Enchantment>> mending = server.getRegistryManager()
+                .get(RegistryKeys.ENCHANTMENT)
+                .getEntry(Enchantments.MENDING);
+        eSource.addTargetEntry(mending.get());
+        eSource.addTargetTag(EnchantmentTags.ARMOR_EXCLUSIVE_SET);
+        skill.addExpSource(eSource);
+
+        EntityInteractionExpSource eiSource = new EntityInteractionExpSource(1);
+        skill.addExpSource(eiSource);
+
+        EntityKillExpSource ekSource = new EntityKillExpSource(1);
+        skill.addExpSource(ekSource);
+
+        ItemUseExpSource iuSource = new ItemUseExpSource(1);
+        skill.addExpSource(iuSource);
+
+        PotionBrewExpSource pbSource = new PotionBrewExpSource(1);
+        skill.addExpSource(pbSource);
+
+        VillagerTradeExpSource vtSource = new VillagerTradeExpSource(1);
+        skill.addExpSource(vtSource);
         //TODO finish adding example sources
 
-        return skill;
+        register(skill, server);
+        save(skill, server);
     }
 
     public static Map<Identifier, Skill> getAll() { return SKILL_MAP; }
 
+    @Nullable
     public static Skill get(Identifier id) {
-        if(!SKILL_MAP.containsKey(id)) register(new Skill(id));
         return SKILL_MAP.get(id);
     }
 

@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.registries.PlayerDataRegistry;import dev.elrol.osmc.registries.SkillRegistry;import net.minecraft.util.Identifier;
+import dev.elrol.osmc.registries.SkillRegistry;import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,11 +30,15 @@ public class PlayerSkillData {
         this.uuid = uuid;
     }
 
-    public long addSkillXp(Identifier skillID, int expGained) {
-        long newXp = SKILL_EXP.getOrDefault(skillID, 0L) + expGained;
-        SKILL_EXP.put(skillID, newXp);
-        PlayerDataRegistry.updatePlayerData(this);
-        return newXp;
+    public void setSkillExp(Identifier skillID, long newExp) {
+        SKILL_EXP.put(skillID, newExp);
+    }
+
+    public void addSkillExp(Identifier skillID, long expGained) {
+        long oldExp = SKILL_EXP.getOrDefault(skillID, 0L);
+        long newExp = oldExp + expGained;
+
+        SKILL_EXP.put(skillID, newExp);
     }
 
     public long getTargetXP(Identifier skillID) {
@@ -72,6 +76,5 @@ public class PlayerSkillData {
     public UUID getUuid() { return uuid; }
     public String getUuidString() { return uuid.toString(); }
 
-    public record SkillExpInfo(int level, long currentExp, long targetExp) {
-    }
+    public record SkillExpInfo(int level, long currentExp, long targetExp) {}
 }

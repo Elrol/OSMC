@@ -23,7 +23,7 @@ public class EntityKillExpSource extends ExpSource {
 
     List<EntityType<?>> entities = new ArrayList<>();
 
-    protected EntityKillExpSource(int expGain) {
+    public EntityKillExpSource(int expGain) {
         super(expGain);
     }
 

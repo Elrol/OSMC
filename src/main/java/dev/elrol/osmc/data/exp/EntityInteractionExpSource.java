@@ -23,7 +23,7 @@ public class EntityInteractionExpSource extends ExpSource {
 
     List<EntityType<?>> entities = new ArrayList<>();
 
-    protected EntityInteractionExpSource(int expGain) {
+    public EntityInteractionExpSource(int expGain) {
         super(expGain);
     }
 

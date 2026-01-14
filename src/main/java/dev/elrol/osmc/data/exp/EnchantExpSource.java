@@ -9,6 +9,7 @@ import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.registries.ExpSourceTypeRegistry;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -38,12 +39,13 @@ public class EnchantExpSource extends ExpSource {
     List<Either<RegistryEntry<Enchantment>, TagKey<Enchantment>>> targets = new ArrayList<>();
     String expFormula = "xp + (level * 2)";
 
-    protected EnchantExpSource(int expGain) {
+    public EnchantExpSource(int expGain) {
         super(expGain);
     }
 
     public double calculate(double level, double enchantPower, double xpSpent) {
         Map<String, Double> variables = new HashMap<>();
+        variables.put("xp", (double) getExpGain());
         variables.put("level", level);
         variables.put("power", enchantPower);
         variables.put("spent", xpSpent);
@@ -62,5 +64,13 @@ public class EnchantExpSource extends ExpSource {
     @Override
     public MapCodec<? extends ExpSource> getCodec() {
         return CODEC;
+    }
+
+    public void addTargetEntry(RegistryEntry<Enchantment> target) {
+        targets.add(Either.left(target));
+    }
+
+    public void addTargetTag(TagKey<Enchantment> target) {
+        targets.add(Either.right(target));
     }
 }

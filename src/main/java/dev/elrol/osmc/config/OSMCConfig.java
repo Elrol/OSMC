@@ -16,21 +16,29 @@ public class OSMCConfig {
 
     public static final Codec<OSMCConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.fieldOf("isDebug").forGetter(data -> data.isDebug),
+            Codec.BOOL.fieldOf("sendLevelUpToGlobal").forGetter(data -> data.sendLevelUpToGlobal),
             Codec.INT.fieldOf("maxLevel").forGetter(data -> data.maxLevel),
-            Codec.INT.fieldOf("autosave").forGetter(data -> data.autoSave)
-    ).apply(instance, (isDebug, maxLevel, autosave) -> {
+            Codec.INT.fieldOf("autosave").forGetter(data -> data.autoSave),
+            Codec.INT.fieldOf("expPayout").forGetter(data -> data.expPayout)
+    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
+        data.sendLevelUpToGlobal = sendLevelUpToGlobal;
+
         data.maxLevel = maxLevel;
         data.autoSave = autosave;
+        data.expPayout = expPayout;
 
         return data;
     }));
 
     public boolean isDebug = false;
+    public boolean sendLevelUpToGlobal = true;
+
     public int maxLevel = 99;
     public int autoSave = 5;
+    public int expPayout = 20;
 
     public void save() {
         DataResult<JsonElement> jsonResult = CODEC.encodeStart(JsonOps.INSTANCE, this);

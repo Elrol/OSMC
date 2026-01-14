@@ -20,7 +20,7 @@ public class CraftExpSource extends ExpSource {
         return data;
     }));
 
-    protected CraftExpSource(int expGain) {
+    public CraftExpSource(int expGain) {
         super(expGain);
     }
 
@@ -36,5 +36,9 @@ public class CraftExpSource extends ExpSource {
     @Override
     public MapCodec<? extends ExpSource> getCodec() {
         return CODEC;
+    }
+
+    public void addItem(ItemStack itemStack) {
+        items.add(itemStack);
     }
 }

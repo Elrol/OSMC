@@ -18,7 +18,7 @@ public class ConsumePotionExpSource extends ExpSource {
             .and(StatusEffect.ENTRY_CODEC.listOf().fieldOf("items").forGetter(ConsumePotionExpSource::getEffects))
             .and(Codec.STRING.fieldOf("formula").forGetter(ConsumePotionExpSource::getFormula)
     ).apply(instance, (expGain, effects, formula) -> {
-        ConsumePotionExpSource data = new ConsumePotionExpSource(expGain);
+        ConsumePotionExpSource data = new ConsumePotionExpSource(expGain, formula);
         data.effects.addAll(effects);
         return data;
     }));
@@ -28,7 +28,7 @@ public class ConsumePotionExpSource extends ExpSource {
 
     public ConsumePotionExpSource(int expGain) {
         super(expGain);
-        formula = "exp + duration + amplifier";
+        formula = "xp + duration + amplifier";
     }
 
     public ConsumePotionExpSource(int expGain, String formula) {

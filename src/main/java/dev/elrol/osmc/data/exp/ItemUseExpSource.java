@@ -22,7 +22,7 @@ public class ItemUseExpSource extends ExpSource {
 
     private final List<ItemStack> items = new ArrayList<>();
 
-    protected ItemUseExpSource(int expGain) {
+    public ItemUseExpSource(int expGain) {
         super(expGain);
     }
 

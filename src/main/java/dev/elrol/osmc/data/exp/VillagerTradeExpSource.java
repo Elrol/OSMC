@@ -22,7 +22,7 @@ public class VillagerTradeExpSource extends ExpSource {
 
     private final List<ItemStack> items = new ArrayList<>();
 
-    protected VillagerTradeExpSource(int expGain) {
+    public VillagerTradeExpSource(int expGain) {
         super(expGain);
     }
 

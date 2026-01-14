@@ -1,6 +1,7 @@
 package dev.elrol.osmc.registries;
 
 import com.mojang.datafixers.util.Either;
+import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.BoundSource;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.*;
@@ -161,6 +162,7 @@ public class ExpSourceRegistry {
     }
 
     private static <U, T extends ExpSource> void addBoundSource(Map<U, List<BoundSource<T>>> cache, U key, T source, Identifier id) {
+        OSMC.LOGGER.warn("Adding bound source: {} [{}]", key, source.getType());
         cache.computeIfAbsent(key, obj -> new ArrayList<>())
                 .add(new BoundSource<>(source, id));
     }

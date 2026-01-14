@@ -24,7 +24,7 @@ public class PotionBrewExpSource extends ExpSource {
 
     private final List<RegistryEntry<Potion>> potions = new ArrayList<>();
 
-    protected PotionBrewExpSource(int expGain) {
+    public PotionBrewExpSource(int expGain) {
         super(expGain);
     }
 

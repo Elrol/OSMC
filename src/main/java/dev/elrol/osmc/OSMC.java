@@ -16,11 +16,6 @@ public class OSMC implements ModInitializer {
     public void onInitialize() {
         CONFIG = CONFIG.load();
         ExpSourceTypeRegistry.init();
-        SkillRegistry.init();
-
-        PlayerDataRegistry.init();
         OSMCEventRegistry.init();
-
-
     }
 }
