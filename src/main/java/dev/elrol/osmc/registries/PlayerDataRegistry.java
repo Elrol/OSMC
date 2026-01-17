@@ -23,37 +23,41 @@ public class PlayerDataRegistry {
     private static final Map<UUID, PlayerSkillData> PLAYER_SKILL_DATA_MAP = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<Identifier, Integer>> EXP_BUFFER = new ConcurrentHashMap<>();
 
-    public static void init(){
+    public static void init() {
         PLAYER_SKILL_DATA_MAP.clear();
         load();
     }
 
-    public static void bufferExp(ServerPlayerEntity player, Identifier skillID, int expGain) {
-        Map<Identifier, Integer> buffer = EXP_BUFFER.getOrDefault(player.getUuid(), new ConcurrentHashMap<>());
+    public static void bufferExp(UUID uuid, Identifier skillID, int expGain) {
+        Map<Identifier, Integer> buffer = EXP_BUFFER.getOrDefault(uuid, new ConcurrentHashMap<>());
         buffer.compute(skillID, (key, value) -> value == null ? expGain : value + expGain);
-        EXP_BUFFER.put(player.getUuid(), buffer);
+        EXP_BUFFER.put(uuid, buffer);
+    }
+
+    public static void bufferExp(ServerPlayerEntity player, Identifier skillID, int expGain) {
+        bufferExp(player.getUuid(), skillID, expGain);
     }
 
     public static void payBuffer(MinecraftServer server) {
         EXP_BUFFER.forEach((uuid, buffer) -> {
-            ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-            if(player != null) {
-                PlayerSkillData data = PlayerDataRegistry.get(uuid);
-                buffer.forEach((id, expGain) -> {
-                    Skill skill = SkillRegistry.get(id);
-                    if(skill != null) {
-                        int oldLevel = data.getSkillLevel(id);
-                        data.addSkillExp(id, (long) expGain);
+            PlayerSkillData data = PlayerDataRegistry.get(uuid);
+            buffer.forEach((id, expGain) -> {
+                Skill skill = SkillRegistry.get(id);
+                if (skill != null) {
+                    int oldLevel = data.getSkillLevel(id);
+                    data.addSkillExp(id, (long) expGain);
 
+                    ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+                    if (player != null) {
                         int newLevel = data.getSkillLevel(id);
                         PlayerSkillData.SkillExpInfo info = data.getSkillInfo(id);
                         String message = "Gained " + expGain + " exp. Level: " + info.level() + " [" + info.currentExp() + "/" + info.targetExp() + "]";
                         OSMCConstants.sendExpMessage(player, skill, message);
-                        if(oldLevel < newLevel) OSMCConstants.levelUpNotification(player, id);
+                        if (oldLevel < newLevel) OSMCConstants.levelUpNotification(player, id);
                     }
-                });
-                PlayerDataRegistry.updatePlayerData(data);
-            }
+                }
+            });
+            PlayerDataRegistry.updatePlayerData(data);
         });
         EXP_BUFFER.clear();
     }
@@ -61,10 +65,18 @@ public class PlayerDataRegistry {
     public static void updatePlayerData(PlayerSkillData data) {
         PLAYER_SKILL_DATA_MAP.put(data.getUuid(), data);
     }
-    
+
     @NotNull
     public static PlayerSkillData get(UUID uuid) {
         return PLAYER_SKILL_DATA_MAP.getOrDefault(uuid, new PlayerSkillData(uuid));
+    }
+
+    public static void load(ServerPlayerEntity player) {
+        JsonElement json = JsonUtils.loadFromJson(OSMCConstants.PLAYER_DATA_DIR, player.getUuidAsString() + ".json", null);
+        if (json != null)
+            PlayerSkillData.CODEC.decode(JsonOps.INSTANCE, json)
+                    .ifError(error -> OSMC.LOGGER.error(error.message()))
+                    .ifSuccess(pair -> updatePlayerData(pair.getFirst()));
     }
     
     public static void load() {

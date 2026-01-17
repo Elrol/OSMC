@@ -27,6 +27,10 @@ public class EntityInteractionExpSource extends ExpSource {
         super(expGain);
     }
 
+    public void addEntity(EntityType<?> entity) {
+        entities.add(entity);
+    }
+
     public List<EntityType<?>> getEntities() { return entities; }
 
     @Override

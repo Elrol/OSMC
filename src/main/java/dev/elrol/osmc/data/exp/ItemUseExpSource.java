@@ -26,6 +26,10 @@ public class ItemUseExpSource extends ExpSource {
         super(expGain);
     }
 
+    public void addItem(ItemStack stack) {
+        items.add(stack);
+    }
+
     public List<ItemStack> getItems() { return items; }
 
     @Override

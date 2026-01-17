@@ -6,25 +6,30 @@ import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.BlockBreakExpSource;
 import dev.elrol.osmc.data.exp.BlockInteractionExpSource;
 import dev.elrol.osmc.data.exp.ConsumePotionExpSource;
-import dev.elrol.osmc.events.EnchantingEvent;
-import dev.elrol.osmc.events.LivingConsumeEvent;
-import dev.elrol.osmc.events.PlayerCraftingEvent;
+import dev.elrol.osmc.data.exp.VillagerTradeExpSource;
+import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.libs.MathUtils;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.item.Item;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.HitResult;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +41,51 @@ public class OSMCEventRegistry {
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
+
+        VillagerTradeEvent.EVENT.register((playerEntity, merchant, trade) -> {
+            if(playerEntity instanceof ServerPlayerEntity player) {
+                List<Item> items = new ArrayList<>();
+                items.add(trade.getDisplayedFirstBuyItem().getItem());
+                items.add(trade.getDisplayedSecondBuyItem().getItem());
+                items.add(trade.getSellItem().getItem());
+
+                items.forEach(item -> {
+                    ExpSourceRegistry.getVillagerTrade(item).forEach(boundSource -> {
+                        VillagerTradeExpSource source = boundSource.source();
+                        if(source.isValid(trade)) {
+                            PlayerDataRegistry.bufferExp(player, boundSource.skillID(), (int) source.calculate(trade));
+                        }
+                    });
+                });
+            }
+        });
+
+        UseEntityCallback.EVENT.register(((playerEntity, world, hand, entity, hitResult) -> {
+            if(playerEntity instanceof ServerPlayerEntity player) {
+                ExpSourceRegistry.getEntityInteract(entity.getType()).forEach(boundSource ->
+                        PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().getExpGain()));
+            }
+            return ActionResult.PASS;
+        }));
+
+        ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(((serverWorld, entity, killedEntity) -> {
+            if(entity instanceof ServerPlayerEntity player) {
+                ExpSourceRegistry.getEntityKill(killedEntity.getType()).forEach(boundSource ->
+                        PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().getExpGain()));
+            }
+        }));
+
+        UseItemCallback.EVENT.register(((playerEntity, world, hand) -> {
+            if(playerEntity instanceof ServerPlayerEntity player) {
+                ExpSourceRegistry.getItemUse(player.getStackInHand(hand).getItem()).forEach(boundSource ->
+                        PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().getExpGain()));
+            }
+            return TypedActionResult.pass(playerEntity.getStackInHand(hand));
+        }));
+
+        PlayerBrewingEvent.EVENT.register(((uuid, ingredient, beforePotion, afterPotion) ->
+                ExpSourceRegistry.getPotionBrew(ingredient.getItem()).forEach(boundSource ->
+                        PlayerDataRegistry.bufferExp(uuid, boundSource.skillID(), boundSource.source().getExpGain()))));
 
         LivingConsumeEvent.POTION.register((living, stack, potion) -> {
             if(living instanceof ServerPlayerEntity player) {
@@ -141,6 +191,7 @@ public class OSMCEventRegistry {
         });
 
         ServerPlayerEvents.LEAVE.register(PlayerDataRegistry::save);
+        ServerPlayerEvents.JOIN.register(PlayerDataRegistry::load);
     }
 
 }

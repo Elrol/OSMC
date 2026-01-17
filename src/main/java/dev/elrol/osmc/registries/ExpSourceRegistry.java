@@ -12,8 +12,11 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.Item;
-import net.minecraft.potion.Potion;
-import net.minecraft.registry.*;
+import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
@@ -34,7 +37,7 @@ public class ExpSourceRegistry {
     private static final Map<EntityType<?>,                     List<BoundSource<EntityInteractionExpSource>>>          ENTITY_INTERACT_CACHE           = new Reference2ObjectOpenHashMap<>();
     private static final Map<EntityType<?>,                     List<BoundSource<EntityKillExpSource>>>                 ENTITY_KILL_CACHE               = new Reference2ObjectOpenHashMap<>();
     private static final Map<Item,                              List<BoundSource<ItemUseExpSource>>>                    ITEM_USE_CACHE                  = new Reference2ObjectOpenHashMap<>();
-    private static final Map<RegistryEntry<Potion>,             List<BoundSource<PotionBrewExpSource>>>                 POTION_BREW_CACHE               = new Reference2ObjectOpenHashMap<>();
+    private static final Map<Item,                              List<BoundSource<PotionBrewExpSource>>>                 POTION_BREW_CACHE               = new Reference2ObjectOpenHashMap<>();
     private static final Map<Item,                              List<BoundSource<VillagerTradeExpSource>>>              VILLAGER_TRADE_CACHE            = new Reference2ObjectOpenHashMap<>();
 
     private static void clear() {
@@ -97,8 +100,8 @@ public class ExpSourceRegistry {
     }
 
     @NotNull
-    public static List<BoundSource<PotionBrewExpSource>> getPotionBrew(RegistryEntry<Potion> potion) {
-        return POTION_BREW_CACHE.getOrDefault(potion, new ArrayList<>());
+    public static List<BoundSource<PotionBrewExpSource>> getPotionBrew(Item item) {
+        return POTION_BREW_CACHE.getOrDefault(item, new ArrayList<>());
     }
 
     @NotNull
@@ -140,11 +143,17 @@ public class ExpSourceRegistry {
                     case ItemUseExpSource itemUse -> itemUse.getItems().forEach(item ->
                             addBoundSource(ITEM_USE_CACHE, item.getItem(), itemUse, id));
 
-                    case PotionBrewExpSource potionBrew -> potionBrew.getPotions().forEach(potion ->
-                            addBoundSource(POTION_BREW_CACHE, potion, potionBrew, id));
+                    case PotionBrewExpSource potionBrew -> potionBrew.getIngredients().forEach(ingredient ->
+                            addBoundSource(POTION_BREW_CACHE, ingredient.getItem(), potionBrew, id));
 
-                    case VillagerTradeExpSource trade -> trade.getItems().forEach(item ->
-                            addBoundSource(VILLAGER_TRADE_CACHE, item.getItem(), trade, id));
+                    case VillagerTradeExpSource trade -> {
+                        List<Item> tradeItems = new ArrayList<>();
+                        tradeItems.addAll(trade.getInputItems());
+                        tradeItems.addAll(trade.getOutputItems());
+                        tradeItems.forEach(item -> {
+                            addBoundSource(VILLAGER_TRADE_CACHE, item, trade, id);
+                        });
+                    }
 
                     default -> {}
                 }

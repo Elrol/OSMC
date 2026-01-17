@@ -13,6 +13,7 @@ import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -127,19 +128,29 @@ public class SkillRegistry {
         skill.addExpSource(eSource);
 
         EntityInteractionExpSource eiSource = new EntityInteractionExpSource(1);
+        eiSource.addEntity(EntityType.BOAT);
         skill.addExpSource(eiSource);
 
         EntityKillExpSource ekSource = new EntityKillExpSource(1);
+        ekSource.addEntity(EntityType.PIG);
         skill.addExpSource(ekSource);
 
         ItemUseExpSource iuSource = new ItemUseExpSource(1);
+        iuSource.addItem(new ItemStack(Items.STICK));
         skill.addExpSource(iuSource);
 
         PotionBrewExpSource pbSource = new PotionBrewExpSource(1);
+        pbSource.addIngredient(new ItemStack(Items.NETHER_WART));
         skill.addExpSource(pbSource);
 
-        VillagerTradeExpSource vtSource = new VillagerTradeExpSource(1);
-        skill.addExpSource(vtSource);
+        VillagerTradeExpSource vtSource1 = new VillagerTradeExpSource(1);
+        vtSource1.addInputItem(new ItemStack(Items.EMERALD));
+        skill.addExpSource(vtSource1);
+
+        VillagerTradeExpSource vtSource2 = new VillagerTradeExpSource(2);
+        vtSource2.addOutputItem(new ItemStack(Items.EMERALD));
+        skill.addExpSource(vtSource2);
+
         //TODO finish adding example sources
 
         register(skill, server);
