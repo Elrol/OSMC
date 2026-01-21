@@ -1,18 +1,19 @@
 package dev.elrol.osmc.registries;
 
+import com.cobblemon.mod.common.pokemon.Species;
 import com.mojang.datafixers.util.Either;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.BoundSource;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
+import dev.elrol.osmc.data.exp.cobblemon.*;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.Item;
-import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
@@ -40,6 +41,18 @@ public class ExpSourceRegistry {
     private static final Map<Item,                              List<BoundSource<PotionBrewExpSource>>>                 POTION_BREW_CACHE               = new Reference2ObjectOpenHashMap<>();
     private static final Map<Item,                              List<BoundSource<VillagerTradeExpSource>>>              VILLAGER_TRADE_CACHE            = new Reference2ObjectOpenHashMap<>();
 
+    private static final Map<Species,                           List<BoundSource<CaptureExpSource>>>           CAPTURE_CACHE                   = new Reference2ObjectOpenHashMap<>();
+
+
+    private static final List<BoundSource<CaptureExpSource>>        GLOBAL_CAPTURE_CACHE            = new ArrayList<>();
+    private static final List<BoundSource<NpcBattleExpSource>>      GLOBAL_NPC_BATTLE_CACHE         = new ArrayList<>();
+    private static final List<BoundSource<PlayerBattleExpSource>>   GLOBAL_PLAYER_BATTLE_CACHE      = new ArrayList<>();
+    private static final List<BoundSource<WildBattleExpSource>>     GLOBAL_WILD_BATTLE_CACHE        = new ArrayList<>();
+    private static final List<BoundSource<EvolutionExpSource>>      GLOBAL_EVOLUTION_CACHE          = new ArrayList<>();
+    private static final List<BoundSource<EggHatchExpSource>>       GLOBAL_EGG_HATCH_CACHE          = new ArrayList<>();
+    private static final List<BoundSource<LevelUpExpSource>>        GLOBAL_LEVEL_UP_CACHE           = new ArrayList<>();
+    private static final List<BoundSource<FossilReviveExpSource>>   GLOBAL_FOSSIL_REVIVE_CACHE      = new ArrayList<>();
+
     private static void clear() {
         BLOCK_BREAK_CACHE.clear();
         BLOCK_INTERACT_CACHE.clear();
@@ -52,6 +65,17 @@ public class ExpSourceRegistry {
         ITEM_USE_CACHE.clear();
         POTION_BREW_CACHE.clear();
         VILLAGER_TRADE_CACHE.clear();
+
+        CAPTURE_CACHE.clear();
+
+        GLOBAL_CAPTURE_CACHE.clear();
+        GLOBAL_NPC_BATTLE_CACHE.clear();
+        GLOBAL_PLAYER_BATTLE_CACHE.clear();
+        GLOBAL_WILD_BATTLE_CACHE.clear();
+        GLOBAL_EVOLUTION_CACHE.clear();
+        GLOBAL_EGG_HATCH_CACHE.clear();
+        GLOBAL_LEVEL_UP_CACHE.clear();
+        GLOBAL_FOSSIL_REVIVE_CACHE.clear();
     }
 
     @NotNull
@@ -109,6 +133,42 @@ public class ExpSourceRegistry {
         return VILLAGER_TRADE_CACHE.getOrDefault(item, new ArrayList<>());
     }
 
+    @NotNull
+    public static List<BoundSource<CaptureExpSource>> getCapture(Species species) {
+        return CAPTURE_CACHE.getOrDefault(species, GLOBAL_CAPTURE_CACHE);
+    }
+
+    @NotNull
+    public static List<BoundSource<NpcBattleExpSource>> getNpcBattle() {
+        return GLOBAL_NPC_BATTLE_CACHE;
+    }
+
+    @NotNull
+    public static List<BoundSource<PlayerBattleExpSource>> getPlayerBattle() {
+        return GLOBAL_PLAYER_BATTLE_CACHE;
+    }
+
+    @NotNull
+    public static List<BoundSource<WildBattleExpSource>> getWildBattle() {
+        return GLOBAL_WILD_BATTLE_CACHE;
+    }
+
+    @NotNull
+    public static List<BoundSource<EvolutionExpSource>> getEvolution() {
+        return GLOBAL_EVOLUTION_CACHE;
+    }
+
+    @NotNull
+    public static List<BoundSource<EggHatchExpSource>> getEggHatch() {
+        return GLOBAL_EGG_HATCH_CACHE;
+    }
+
+    @NotNull
+    public static List<BoundSource<LevelUpExpSource>> getLevelUp() { return GLOBAL_LEVEL_UP_CACHE; }
+
+    @NotNull
+    public static List<BoundSource<FossilReviveExpSource>> getFossilRevive() { return GLOBAL_FOSSIL_REVIVE_CACHE; }
+
     public static void rebuild(Map<Identifier, Skill> skills, RegistryWrapper.WrapperLookup registryManager) {
         clear();
 
@@ -155,6 +215,36 @@ public class ExpSourceRegistry {
                         });
                     }
 
+                    case CaptureExpSource capture -> {
+                        if(capture.getSpecies().isEmpty()) {
+                            addBoundSource(GLOBAL_CAPTURE_CACHE, capture, id);
+                        } else {
+                            capture.getSpecies().forEach(species ->
+                                    addBoundSource(CAPTURE_CACHE, species, capture, id));
+                        }
+                    }
+
+                    case NpcBattleExpSource npcBattle ->
+                        addBoundSource(GLOBAL_NPC_BATTLE_CACHE, npcBattle, id);
+
+                    case PlayerBattleExpSource playerBattle ->
+                            addBoundSource(GLOBAL_PLAYER_BATTLE_CACHE, playerBattle, id);
+
+                    case WildBattleExpSource wildBattle ->
+                            addBoundSource(GLOBAL_WILD_BATTLE_CACHE, wildBattle, id);
+
+                    case EvolutionExpSource evolution ->
+                        addBoundSource(GLOBAL_EVOLUTION_CACHE, evolution, id);
+
+                    case EggHatchExpSource eggHatch ->
+                        addBoundSource(GLOBAL_EGG_HATCH_CACHE, eggHatch, id);
+
+                    case LevelUpExpSource levelUp ->
+                        addBoundSource(GLOBAL_LEVEL_UP_CACHE, levelUp, id);
+
+                    case FossilReviveExpSource fossilRevive ->
+                        addBoundSource(GLOBAL_FOSSIL_REVIVE_CACHE, fossilRevive, id);
+
                     default -> {}
                 }
             }
@@ -168,6 +258,10 @@ public class ExpSourceRegistry {
                         addBoundSource(cache, entry, source, id);
                     }
                 }));
+    }
+
+    private static <T extends ExpSource> void addBoundSource(List<BoundSource<T>> cache, T source, Identifier id) {
+        cache.add(new BoundSource<>(source, id));
     }
 
     private static <U, T extends ExpSource> void addBoundSource(Map<U, List<BoundSource<T>>> cache, U key, T source, Identifier id) {

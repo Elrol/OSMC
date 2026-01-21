@@ -1,13 +1,17 @@
 package dev.elrol.osmc.registries;
 
 import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.google.gson.JsonElement;
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.exp.*;
+import dev.elrol.osmc.data.exp.cobblemon.CaptureExpSource;
+import dev.elrol.osmc.data.exp.cobblemon.EggHatchExpSource;
+import dev.elrol.osmc.data.exp.cobblemon.EvolutionExpSource;
+import dev.elrol.osmc.data.exp.cobblemon.LevelUpExpSource;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
@@ -150,6 +154,19 @@ public class SkillRegistry {
         VillagerTradeExpSource vtSource2 = new VillagerTradeExpSource(2);
         vtSource2.addOutputItem(new ItemStack(Items.EMERALD));
         skill.addExpSource(vtSource2);
+
+        // Cobblemon ExpSources
+
+        CaptureExpSource pcSource = new CaptureExpSource(1);
+        pcSource.addSpecies(PokemonSpecies.getByName("magikarp"));
+        skill.addExpSource(pcSource);
+        skill.addExpSource(new CaptureExpSource(1));
+
+        skill.addExpSource(new EvolutionExpSource(1));
+
+        skill.addExpSource(new EggHatchExpSource(1));
+
+        skill.addExpSource(new LevelUpExpSource(1));
 
         //TODO finish adding example sources
 

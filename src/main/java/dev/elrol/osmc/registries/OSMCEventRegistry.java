@@ -1,12 +1,15 @@
 package dev.elrol.osmc.registries;
 
+import com.cobblemon.mod.common.api.battles.model.actor.BattleActor;
+import com.cobblemon.mod.common.api.events.CobblemonEvents;
+import com.cobblemon.mod.common.battles.actor.PlayerBattleActor;
+import com.cobblemon.mod.common.entity.npc.NPCBattleActor;
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.BoundSource;
 import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.exp.BlockBreakExpSource;
-import dev.elrol.osmc.data.exp.BlockInteractionExpSource;
-import dev.elrol.osmc.data.exp.ConsumePotionExpSource;
-import dev.elrol.osmc.data.exp.VillagerTradeExpSource;
+import dev.elrol.osmc.data.exp.*;
+import dev.elrol.osmc.data.exp.cobblemon.CaptureExpSource;
 import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.libs.MathUtils;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -41,6 +44,69 @@ public class OSMCEventRegistry {
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
+
+        CobblemonEvents.EVOLUTION_COMPLETE.subscribe(event -> {
+            Pokemon pokemon = event.getPokemon();
+            if(pokemon.isPlayerOwned() && pokemon.getOwnerPlayer() != null) {
+                ExpSourceRegistry.getEvolution().forEach(boundSource ->
+                        PlayerDataRegistry.bufferExp(pokemon.getOwnerPlayer(), boundSource.skillID(), boundSource.source().calculate()));
+            }
+        });
+
+        CobblemonEvents.FOSSIL_REVIVED.subscribe(event -> {
+            ServerPlayerEntity player = event.getPlayer();
+            if(player == null) return;
+
+            ExpSourceRegistry.getFossilRevive().forEach(boundSource ->
+                    PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().calculate()));
+        });
+
+        CobblemonEvents.HATCH_EGG_POST.subscribe(event -> {
+           ServerPlayerEntity player = event.getPlayer();
+
+           ExpSourceRegistry.getEggHatch().forEach(boundSource ->
+                   PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().calculate()));
+        });
+
+        CobblemonEvents.LEVEL_UP_EVENT.subscribe(event -> {
+            if(event.getPokemon().isPlayerOwned() && event.getPokemon().getOwnerPlayer() != null) {
+                ExpSourceRegistry.getLevelUp().forEach(boundSource ->
+                        PlayerDataRegistry.bufferExp(event.getPokemon().getOwnerPlayer(), boundSource.skillID(), boundSource.source().calculate(event.getPokemon().getLevel())));
+            }
+        });
+
+        CobblemonEvents.POKEMON_CAPTURED.subscribe(event -> {
+            ServerPlayerEntity player = event.getPlayer();
+            Pokemon pokemon = event.getPokemon();
+            float ball_modifier = event.getPokeBallEntity().getPokeBall().getCatchRateModifier().value(player, pokemon);
+            ExpSourceRegistry.getCapture(pokemon.getSpecies()).forEach(boundSource -> {
+                CaptureExpSource source = boundSource.source();
+                double exp = source.calculate(pokemon, ball_modifier);
+                PlayerDataRegistry.bufferExp(player, boundSource.skillID(), (int) exp);
+            });
+        });
+
+        CobblemonEvents.BATTLE_VICTORY.subscribe(event -> {
+            if(!event.getWasWildCapture()) {
+                for (BattleActor winner : event.getWinners()) {
+                    if(winner instanceof PlayerBattleActor playerActor) {
+                        ServerPlayerEntity player = playerActor.getEntity();
+                        if(player == null) continue;
+
+                        if(event.getBattle().isPvW()) {
+                            ExpSourceRegistry.getWildBattle().forEach(source ->
+                                    PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate()));
+                        } else if(event.getBattle().isPvP()) {
+                            ExpSourceRegistry.getPlayerBattle().forEach(source ->
+                                    PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate()));
+                        } else if(event.getBattle().isPvN()) {
+                            ExpSourceRegistry.getNpcBattle().forEach(source ->
+                                    PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate()));
+                        }
+                    }
+                }
+            }
+        });
 
         VillagerTradeEvent.EVENT.register((playerEntity, merchant, trade) -> {
             if(playerEntity instanceof ServerPlayerEntity player) {

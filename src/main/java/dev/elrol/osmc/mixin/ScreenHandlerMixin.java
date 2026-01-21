@@ -10,7 +10,6 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,6 +19,7 @@ import java.util.UUID;
 @Mixin(ScreenHandler.class)
 public abstract class ScreenHandlerMixin {
 
+    @Unique
     UUID owner;
 
     @Unique
@@ -37,14 +37,6 @@ public abstract class ScreenHandlerMixin {
                     ((PlayerTrackable) blockEntity).osmc$setLastPlayer(owner);
                 }
             }
-        }
-    }
-
-
-    @Inject(method = "onContentChanged", at = @At("HEAD"))
-    private void osmc$onContentChanged(Inventory inventory, CallbackInfo ci) {
-        if(self() instanceof BrewingStandScreenHandler brewingHandler) {
-
         }
     }
 

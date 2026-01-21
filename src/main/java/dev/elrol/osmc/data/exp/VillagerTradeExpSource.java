@@ -29,7 +29,7 @@ public class VillagerTradeExpSource extends ExpSource {
         return data;
     }));
 
-    private String expFormula = "2*one + 1*two + 3*three";
+    private String expFormula = "xp * (2*one + 1*two + 3*three)";
     private final List<ItemStack> inputItems = new ArrayList<>();
     private final List<ItemStack> outputItems = new ArrayList<>();
 
@@ -57,7 +57,11 @@ public class VillagerTradeExpSource extends ExpSource {
         int two = trade.getDisplayedSecondBuyItem().getCount();
         int three = trade.getSellItem().getCount();
 
-        return MathUtils.calculate(getExpFormula(), Map.of("one", (double) one, "two", (double) two, "three", (double) three));
+        return MathUtils.calculate(getExpFormula(), Map.of(
+                "one", (double) one,
+                "two", (double) two,
+                "three", (double) three,
+                "xp", (double) getExpGain()));
     }
 
     public boolean isValid(TradeOffer trade) {
