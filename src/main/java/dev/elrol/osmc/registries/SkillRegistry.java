@@ -51,16 +51,17 @@ public class SkillRegistry {
             JsonElement json = JsonUtils.loadFromJson(OSMCConstants.SKILL_CONFIG_DIR, file.getName(), null);
 
             if(json != null) {
-                Skill.CODEC.parse(JsonOps.INSTANCE, json)
+                RegistryOps<JsonElement> registryOps = server.getRegistryManager().getOps(JsonOps.INSTANCE);
+                Skill.CODEC.parse(registryOps, json)
                         .resultOrPartial(OSMC.LOGGER::error)
-                        .ifPresent(skill -> register(skill, server));
+                        .ifPresent(SkillRegistry::register);
 
             } else {
                 OSMC.LOGGER.error("Skill failed to load from: {}", file);
             }
         }
 
-        if(!contains(OSMCConstants.osmcID("example_skill")))
+        if(!(new File(OSMCConstants.SKILL_CONFIG_DIR, "example_skill.json").exists()))
             SkillRegistry.registerExampleSkill(server);
     }
 
@@ -76,7 +77,7 @@ public class SkillRegistry {
         SKILL_MAP.forEach((id, skill) -> save(skill, server));
     }
 
-    private static void register(Skill skill, MinecraftServer server) {
+    private static void register(Skill skill) {
         if(SKILL_MAP == null) SKILL_MAP = new HashMap<>();
 
         if(skill.getExpSources().isEmpty()) {
@@ -170,7 +171,7 @@ public class SkillRegistry {
 
         //TODO finish adding example sources
 
-        register(skill, server);
+        register(skill);
         save(skill, server);
     }
 

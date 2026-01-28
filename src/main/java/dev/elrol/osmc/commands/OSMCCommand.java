@@ -13,6 +13,7 @@ import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import dev.elrol.osmc.registries.ExpSourceRegistry;
+import dev.elrol.osmc.registries.Leaderboard;
 import dev.elrol.osmc.registries.PlayerDataRegistry;
 import dev.elrol.osmc.registries.SkillRegistry;
 import net.minecraft.command.CommandRegistryAccess;
@@ -22,11 +23,15 @@ import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 
 public class OSMCCommand extends BaseCommand {
@@ -68,6 +73,10 @@ public class OSMCCommand extends BaseCommand {
                                                 .then(argument("target", EntityArgumentType.player())
                                                         .executes(OSMCCommand::setPlayerSkillExp))))
                         ))
+                .then(literal("leaderboard")
+                        .then(argument("skill", IdentifierArgumentType.identifier())
+                                .suggests(OSMCCommand::SkillSuggestions)
+                                .executes(OSMCCommand::displayLeaderboard)))
         );
     }
 
@@ -223,6 +232,8 @@ public class OSMCCommand extends BaseCommand {
 
         OSMC.LOGGER.info("Loading all player skill data");
         PlayerDataRegistry.init();
+
+        Leaderboard.populate();
         return 1;
     }
 
@@ -244,12 +255,47 @@ public class OSMCCommand extends BaseCommand {
 
     private static void displaySkill(ServerCommandSource source, PlayerSkillData.SkillExpInfo info, Skill skill) {
         source.sendMessage(Text.empty()
-                .append(OSMCConstants.osmcTag())
                 .append(skill.getTextName())
                 .append(Text.literal(" " + info.level() + " [ "))
                 .append(Text.literal(String.valueOf(info.currentExp())).formatted(Formatting.YELLOW))
                 .append(Text.literal(" / "))
                 .append(Text.literal(String.valueOf(info.targetExp())).formatted(Formatting.GREEN))
                 .append(Text.literal(" ]")));
+    }
+
+    private static int displayLeaderboard(CommandContext<ServerCommandSource> context) {
+        Identifier id = context.getArgument("skill", Identifier.class);
+        List<Leaderboard.Entry> entries = Leaderboard.get(id);
+
+        ServerCommandSource source = context.getSource();
+        sendLeaderboardHeader(source, id);
+        int rank = 1;
+        for (Leaderboard.Entry entry : entries) {
+            displayEntry(source, id, entry, rank);
+            rank++;
+        }
+        return 1;
+    }
+
+    private static void sendLeaderboardHeader(ServerCommandSource source, Identifier skillID) {
+        Skill skill = SkillRegistry.get(skillID);
+        if(skill == null) {
+            source.sendMessage(Text.literal("Skill not found").formatted(Formatting.RED));
+            return;
+        }
+        source.sendMessage(Text.empty()
+                .append(skill.getTextName())
+                .append(" Leaderboard:"));
+    }
+
+    private static void displayEntry(ServerCommandSource source, Identifier skillID, Leaderboard.Entry entry, int rank) {
+        Formatting color = Formatting.GRAY;
+        PlayerSkillData data = PlayerDataRegistry.get(entry.uuid());
+        source.sendMessage(Text.literal(" ").append(Text.literal(rank > 9 ? "│" + rank + "│ " : "│ " + rank + "│ ").formatted(color))
+                .append(data.getUsername())
+                .styled(s -> s.withHoverEvent(new HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        Text.literal("Level " + data.getSkillLevel(skillID) + " │ " + entry.exp() + " exp").formatted(color)))
+                ));
     }
 }

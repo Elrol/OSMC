@@ -50,7 +50,7 @@ public class JsonUtils {
                 JsonElement obj = GSON.fromJson(reader, JsonElement.class);
 
                 if(obj != null && !obj.isJsonNull()) {
-                    if(OSMC.CONFIG.isDebug) {
+                    if(OSMC.CONFIG.getDebug()) {
                         OSMC.LOGGER.info("Loaded File {}", name);
                     }
                     return obj;

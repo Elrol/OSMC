@@ -15,12 +15,13 @@ public class OSMCConfig {
     private static final String FILENAME = "config.json";
 
     public static final Codec<OSMCConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.BOOL.fieldOf("isDebug").forGetter(data -> data.isDebug),
-            Codec.BOOL.fieldOf("sendLevelUpToGlobal").forGetter(data -> data.sendLevelUpToGlobal),
-            Codec.INT.fieldOf("maxLevel").forGetter(data -> data.maxLevel),
-            Codec.INT.fieldOf("autosave").forGetter(data -> data.autoSave),
-            Codec.INT.fieldOf("expPayout").forGetter(data -> data.expPayout)
-    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout) -> {
+            Codec.BOOL.fieldOf("isDebug").forGetter(OSMCConfig::getDebug),
+            Codec.BOOL.fieldOf("sendLevelUpToGlobal").forGetter(OSMCConfig::getSendLevelUpToGlobal),
+            Codec.INT.fieldOf("maxLevel").forGetter(OSMCConfig::getMaxLevel),
+            Codec.INT.fieldOf("autosave").forGetter(OSMCConfig::getAutoSave),
+            Codec.INT.fieldOf("expPayout").forGetter(OSMCConfig::getExpPayout),
+            Codec.INT.fieldOf("leaderboardCount").forGetter(OSMCConfig::getLeaderboardCount)
+    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
@@ -29,16 +30,31 @@ public class OSMCConfig {
         data.maxLevel = maxLevel;
         data.autoSave = autosave;
         data.expPayout = expPayout;
+        data.leaderboardCount = leaderboardCount;
 
         return data;
     }));
 
-    public boolean isDebug = false;
-    public boolean sendLevelUpToGlobal = true;
+    private boolean isDebug = false;
+    private boolean sendLevelUpToGlobal = true;
 
-    public int maxLevel = 99;
-    public int autoSave = 5;
-    public int expPayout = 20;
+    private int maxLevel = 99;
+    private int autoSave = 5;
+    private int expPayout = 20;
+    private int leaderboardCount = 5;
+
+
+    public boolean getDebug() { return isDebug; }
+
+    public boolean getSendLevelUpToGlobal() { return sendLevelUpToGlobal; }
+
+    public int getMaxLevel() { return maxLevel; }
+
+    public int getAutoSave() { return autoSave; }
+
+    public int getExpPayout() { return expPayout; }
+
+    public int getLeaderboardCount() { return leaderboardCount; }
 
     public void save() {
         DataResult<JsonElement> jsonResult = CODEC.encodeStart(JsonOps.INSTANCE, this);

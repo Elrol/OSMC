@@ -1,5 +1,6 @@
 package dev.elrol.osmc.data.exp.cobblemon;
 
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -20,7 +21,7 @@ public class LevelUpExpSource extends ExpSource {
         return data;
     }));
 
-    private String expFormula = "xp * level";
+    private String expFormula = "xp * p_level";
 
     public LevelUpExpSource(int expGain) {
         super(expGain);
@@ -28,10 +29,8 @@ public class LevelUpExpSource extends ExpSource {
 
     public String getExpFormula() { return expFormula; }
 
-    public int calculate(int level) {
-        return (int) MathUtils.calculate(getExpFormula(), Map.of(
-                "xp", (double) getExpGain(),
-                "level", (double) level));
+    public int calculate(Pokemon pokemon) {
+        return (int) MathUtils.calculate(getExpFormula(), getVariables(), pokemon);
     }
 
     @Override

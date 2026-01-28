@@ -3,6 +3,7 @@ package dev.elrol.osmc.registries;
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor;
+import com.cobblemon.mod.common.battles.actor.PokemonBattleActor;
 import com.cobblemon.mod.common.entity.npc.NPCBattleActor;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
@@ -49,7 +50,7 @@ public class OSMCEventRegistry {
             Pokemon pokemon = event.getPokemon();
             if(pokemon.isPlayerOwned() && pokemon.getOwnerPlayer() != null) {
                 ExpSourceRegistry.getEvolution().forEach(boundSource ->
-                        PlayerDataRegistry.bufferExp(pokemon.getOwnerPlayer(), boundSource.skillID(), boundSource.source().calculate()));
+                        PlayerDataRegistry.bufferExp(pokemon.getOwnerPlayer(), boundSource.skillID(), boundSource.source().calculate(pokemon)));
             }
         });
 
@@ -58,20 +59,21 @@ public class OSMCEventRegistry {
             if(player == null) return;
 
             ExpSourceRegistry.getFossilRevive().forEach(boundSource ->
-                    PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().calculate()));
+                    PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().calculate(event.getPokemon())));
         });
 
         CobblemonEvents.HATCH_EGG_POST.subscribe(event -> {
            ServerPlayerEntity player = event.getPlayer();
 
            ExpSourceRegistry.getEggHatch().forEach(boundSource ->
-                   PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().calculate()));
+                   PlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().calculate(event.getPokemon())));
         });
 
         CobblemonEvents.LEVEL_UP_EVENT.subscribe(event -> {
-            if(event.getPokemon().isPlayerOwned() && event.getPokemon().getOwnerPlayer() != null) {
+            Pokemon pokemon = event.getPokemon();
+            if(pokemon.isPlayerOwned() && pokemon.getOwnerPlayer() != null) {
                 ExpSourceRegistry.getLevelUp().forEach(boundSource ->
-                        PlayerDataRegistry.bufferExp(event.getPokemon().getOwnerPlayer(), boundSource.skillID(), boundSource.source().calculate(event.getPokemon().getLevel())));
+                        PlayerDataRegistry.bufferExp(pokemon.getOwnerPlayer(), boundSource.skillID(), boundSource.source().calculate(pokemon)));
             }
         });
 
@@ -93,15 +95,17 @@ public class OSMCEventRegistry {
                         ServerPlayerEntity player = playerActor.getEntity();
                         if(player == null) continue;
 
-                        if(event.getBattle().isPvW()) {
+                        List<Pokemon> pokemonList = event.getLosers().stream().filter(actor -> actor instanceof PokemonBattleActor).map(actor -> ((PokemonBattleActor)actor).getPokemon().getOriginalPokemon()).toList();
+
+                        if (event.getBattle().isPvW()) {
                             ExpSourceRegistry.getWildBattle().forEach(source ->
-                                    PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate()));
-                        } else if(event.getBattle().isPvP()) {
+                                    pokemonList.forEach(pokemon -> PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate(pokemon))));
+                        } else if (event.getBattle().isPvP()) {
                             ExpSourceRegistry.getPlayerBattle().forEach(source ->
-                                    PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate()));
-                        } else if(event.getBattle().isPvN()) {
+                                    pokemonList.forEach(pokemon -> PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate(pokemon))));
+                        } else if (event.getBattle().isPvN()) {
                             ExpSourceRegistry.getNpcBattle().forEach(source ->
-                                    PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate()));
+                                    pokemonList.forEach(pokemon -> PlayerDataRegistry.bufferExp(player.getUuid(), source.skillID(), source.source().calculate(pokemon))));
                         }
                     }
                 }
@@ -228,7 +232,7 @@ public class OSMCEventRegistry {
             ticksSinceSave++;
             ticksSinceBufferPayout++;
 
-            int autoSaveDelay = OSMC.CONFIG.autoSave * 1200;
+            int autoSaveDelay = OSMC.CONFIG.getAutoSave() * 1200;
 
             if(ticksSinceSave >= autoSaveDelay) {
                 ticksSinceSave = 0;
@@ -237,7 +241,7 @@ public class OSMCEventRegistry {
                 PlayerDataRegistry.save();
             }
 
-            if(ticksSinceBufferPayout >= OSMC.CONFIG.expPayout) {
+            if(ticksSinceBufferPayout >= OSMC.CONFIG.getExpPayout()) {
                 ticksSinceBufferPayout = 0;
                 PlayerDataRegistry.payBuffer(server);
             }
@@ -249,6 +253,7 @@ public class OSMCEventRegistry {
             ExpSourceRegistry.rebuild(SkillRegistry.getAll(), server.getRegistryManager());
             OSMC.LOGGER.info("Loading all player skill data");
             PlayerDataRegistry.init();
+            Leaderboard.populate();
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(minecraftServer -> {

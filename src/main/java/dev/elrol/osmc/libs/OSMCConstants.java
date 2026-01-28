@@ -85,7 +85,7 @@ public class OSMCConstants {
     }
 
     public static void levelUpNotification(ServerPlayerEntity player, Identifier skillID) {
-        boolean global = OSMC.CONFIG.sendLevelUpToGlobal;
+        boolean global = OSMC.CONFIG.getSendLevelUpToGlobal();
         Skill skill = SkillRegistry.get(skillID);
         if(skill == null) return;
 

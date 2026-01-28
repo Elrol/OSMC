@@ -4,7 +4,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.registries.SkillRegistry;import net.minecraft.util.Identifier;
+import dev.elrol.osmc.registries.SkillRegistry;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
+import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,21 +17,27 @@ public class PlayerSkillData {
 
     public static Codec<PlayerSkillData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("uuid").forGetter(PlayerSkillData::getUuidString),
-        Codec.unboundedMap(Identifier.CODEC, Codec.LONG).fieldOf("skillExp").forGetter(PlayerSkillData::getSkillExpMap)
-    ).apply(instance, (uuid, skillExp) -> {
+            Codec.unboundedMap(Identifier.CODEC, Codec.LONG).fieldOf("skillExp").forGetter(PlayerSkillData::getSkillExpMap),
+            TextCodecs.CODEC.optionalFieldOf("username", Text.empty()).forGetter(PlayerSkillData::getUsername)
+    ).apply(instance, (uuid, skillExp, username) -> {
         PlayerSkillData data = new PlayerSkillData(UUID.fromString(uuid));
 
         data.SKILL_EXP.putAll(skillExp);
+        data.username = username;
 
         return data;
     }));
 
     private final UUID uuid;
     private final Map<Identifier, Long> SKILL_EXP = new HashMap<>();
+    private Text username = Text.empty();
 
     public PlayerSkillData(UUID uuid) {
         this.uuid = uuid;
     }
+
+    public void setUsername(Text text) { username = text; }
+    public Text getUsername() { return username; }
 
     public void setSkillExp(Identifier skillID, long newExp) {
         SKILL_EXP.put(skillID, newExp);
@@ -43,6 +52,7 @@ public class PlayerSkillData {
 
     public long getTargetXP(Identifier skillID) {
         Skill skill = SkillRegistry.get(skillID);
+        assert skill != null;
         return Math.round(MathUtils.getTotalXPForLevel(skillID, skill.getLevelFormula(), getSkillLevel(skillID) + 1));
     }
 
@@ -51,7 +61,8 @@ public class PlayerSkillData {
         int level = 1;
         long xp = getSkillXp(skillID);
 
-        while (level < OSMC.CONFIG.maxLevel) {
+        while (level < OSMC.CONFIG.getMaxLevel()) {
+            assert skill != null;
             if(xp < MathUtils.getTotalXPForLevel(skillID, skill.getLevelFormula(), level + 1)) {
                 break;
             }

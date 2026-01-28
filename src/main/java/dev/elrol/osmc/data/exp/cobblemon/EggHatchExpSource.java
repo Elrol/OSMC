@@ -1,5 +1,6 @@
 package dev.elrol.osmc.data.exp.cobblemon;
 
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -28,8 +29,8 @@ public class EggHatchExpSource extends ExpSource {
 
     public String getExpFormula() { return expFormula; }
 
-    public int calculate() {
-        return (int) MathUtils.calculate(getExpFormula(), Map.of("xp", (double) getExpGain()));
+    public int calculate(Pokemon pokemon) {
+        return (int) MathUtils.calculate(getExpFormula(), getVariables(), pokemon);
     }
 
     @Override

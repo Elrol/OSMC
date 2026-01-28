@@ -6,6 +6,8 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.ExpSourceType;
 
+import java.util.Map;
+
 public abstract class ExpSource {
 
     public static final Codec<ExpSource> CODEC = ExpSourceType.REGISTRY.getCodec()
@@ -21,6 +23,8 @@ public abstract class ExpSource {
 
     public abstract ExpSourceType<?> getType();
     public abstract MapCodec<? extends ExpSource> getCodec();
+
+    protected Map<String, Double> getVariables() { return Map.of("xp", (double) getExpGain()); }
 
     public static <T extends ExpSource> Products.P1<RecordCodecBuilder.Mu<T>, Integer> getCommonCodec(RecordCodecBuilder.Instance<T> instance) {
         return instance.group(

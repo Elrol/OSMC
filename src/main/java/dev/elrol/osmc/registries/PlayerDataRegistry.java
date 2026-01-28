@@ -10,6 +10,7 @@ import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,6 +48,9 @@ public class PlayerDataRegistry {
                     int oldLevel = data.getSkillLevel(id);
                     data.addSkillExp(id, (long) expGain);
 
+                    long totalExp = data.getSkillXp(id);
+                    Leaderboard.updateEntry(id, uuid, totalExp);
+
                     ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                     if (player != null) {
                         int newLevel = data.getSkillLevel(id);
@@ -66,17 +70,34 @@ public class PlayerDataRegistry {
         PLAYER_SKILL_DATA_MAP.put(data.getUuid(), data);
     }
 
+    public static Map<UUID, PlayerSkillData> get() {
+        return PLAYER_SKILL_DATA_MAP;
+    }
+
     @NotNull
     public static PlayerSkillData get(UUID uuid) {
         return PLAYER_SKILL_DATA_MAP.getOrDefault(uuid, new PlayerSkillData(uuid));
     }
 
+    public static Text getUsername(UUID uuid) {
+        return get(uuid).getUsername();
+    }
+
     public static void load(ServerPlayerEntity player) {
         JsonElement json = JsonUtils.loadFromJson(OSMCConstants.PLAYER_DATA_DIR, player.getUuidAsString() + ".json", null);
-        if (json != null)
+        if (json != null) {
             PlayerSkillData.CODEC.decode(JsonOps.INSTANCE, json)
                     .ifError(error -> OSMC.LOGGER.error(error.message()))
-                    .ifSuccess(pair -> updatePlayerData(pair.getFirst()));
+                    .ifSuccess(pair -> {
+                        PlayerSkillData data = pair.getFirst();
+                        data.setUsername(player.getName());
+                        updatePlayerData(data);
+                    });
+        } else {
+          PlayerSkillData data = get(player.getUuid());
+          data.setUsername(player.getName());
+          updatePlayerData(data);
+        }
     }
     
     public static void load() {

@@ -1,5 +1,9 @@
 package dev.elrol.osmc.libs;
 
+import com.cobblemon.mod.common.api.pokemon.stats.Stats;
+import com.cobblemon.mod.common.pokemon.EVs;
+import com.cobblemon.mod.common.pokemon.IVs;
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import net.minecraft.util.Identifier;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
@@ -50,4 +54,35 @@ public class MathUtils {
         return total;
     }
 
+    public static double calculate(String formula, Map<String, Double> variables, Pokemon pokemon) {
+        IVs ivs = pokemon.getIvs();
+        EVs evs = pokemon.getEvs();
+
+        Map<String, Double> vars = new HashMap<>(variables);
+
+        vars.put("p_level",      (double) pokemon.getLevel());
+
+        vars.put("p_iv_hp",      (double) ivs.getOrDefault(Stats.HP));
+        vars.put("p_iv_atk",     (double) ivs.getOrDefault(Stats.ATTACK));
+        vars.put("p_iv_def",     (double) ivs.getOrDefault(Stats.DEFENCE));
+        vars.put("p_iv_spatk",   (double) ivs.getOrDefault(Stats.SPECIAL_ATTACK));
+        vars.put("p_iv_spdef",   (double) ivs.getOrDefault(Stats.SPECIAL_DEFENCE));
+        vars.put("p_iv_spd",     (double) ivs.getOrDefault(Stats.SPEED));
+        vars.put("p_ivs",        (double) ivs.total());
+
+        vars.put("p_ev_hp",      (double) evs.getOrDefault(Stats.HP));
+        vars.put("p_ev_atk",     (double) evs.getOrDefault(Stats.ATTACK));
+        vars.put("p_ev_def",     (double) evs.getOrDefault(Stats.DEFENCE));
+        vars.put("p_ev_spatk",   (double) evs.getOrDefault(Stats.SPECIAL_ATTACK));
+        vars.put("p_ev_spdef",   (double) evs.getOrDefault(Stats.SPECIAL_DEFENCE));
+        vars.put("p_evs_pd",     (double) evs.getOrDefault(Stats.SPEED));
+        vars.put("p_evs",        (double) evs.total());
+
+        vars.put("p_shiny",      pokemon.getShiny() ? 1.0 : 0.0);
+        vars.put("p_legend",     pokemon.isLegendary() ? 1.0 : 0.0);
+
+        vars.put("p_stage",      (double) CobblemonUtils.getPokemonStage(pokemon));
+
+        return calculate(formula, vars);
+    }
 }

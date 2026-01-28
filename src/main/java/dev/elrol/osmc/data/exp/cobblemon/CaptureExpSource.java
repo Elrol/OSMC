@@ -26,7 +26,7 @@ public class CaptureExpSource extends ExpSource {
         return data;
     }));
 
-    private String expFormula = "(level + ball_modifier * (1 + shiny)) * (1 + legendary)";
+    private String expFormula = "(p_level + ball_modifier * (1 + p_shiny)) * (1 + p_legendary)";
     List<Species> species = new ArrayList<>();
 
     public CaptureExpSource(int expGain) {
@@ -37,15 +37,12 @@ public class CaptureExpSource extends ExpSource {
 
     public List<Species> getSpecies() { return species; }
 
-    // ((level + ball_modifier + exp) * (1 + shiny)) * (1 + legendary)
+    // (p_level + ball_modifier * (1 + p_shiny)) * (1 + p_legendary)
     public double calculate(Pokemon pokemon, float ballModifier) {
         Map<String, Double> variables = Map.of(
                 "xp", (double) getExpGain(),
-                "level", (double) pokemon.getLevel(),
-                "ball_modifier", (double) ballModifier,
-                "shiny", (double) (pokemon.getShiny() ? 1 : 0),
-                "legendary", (double) (pokemon.isLegendary() ? 1 : 0));
-        return MathUtils.calculate(getExpFormula(), variables);
+                "ball_modifier", (double) ballModifier);
+        return MathUtils.calculate(getExpFormula(), variables, pokemon);
     }
 
     @Override

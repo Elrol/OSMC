@@ -261,11 +261,12 @@ public class ExpSourceRegistry {
     }
 
     private static <T extends ExpSource> void addBoundSource(List<BoundSource<T>> cache, T source, Identifier id) {
+        if(OSMC.CONFIG.getDebug()) OSMC.LOGGER.warn("Adding bound source: [{}]", source.getType());
         cache.add(new BoundSource<>(source, id));
     }
 
     private static <U, T extends ExpSource> void addBoundSource(Map<U, List<BoundSource<T>>> cache, U key, T source, Identifier id) {
-        OSMC.LOGGER.warn("Adding bound source: {} [{}]", key, source.getType());
+        if(OSMC.CONFIG.getDebug()) OSMC.LOGGER.warn("Adding bound source: {} [{}]", key, source.getType());
         cache.computeIfAbsent(key, obj -> new ArrayList<>())
                 .add(new BoundSource<>(source, id));
     }
