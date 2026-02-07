@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.registries.SkillRegistry;
+import dev.elrol.osmc.registries.OSMCSkillRegistry;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Identifier;
@@ -51,13 +51,13 @@ public class PlayerSkillData {
     }
 
     public long getTargetXP(Identifier skillID) {
-        Skill skill = SkillRegistry.get(skillID);
+        Skill skill = OSMCSkillRegistry.get(skillID);
         assert skill != null;
         return Math.round(MathUtils.getTotalXPForLevel(skillID, skill.getLevelFormula(), getSkillLevel(skillID) + 1));
     }
 
     public int getSkillLevel(Identifier skillID) {
-        Skill skill = SkillRegistry.get(skillID);
+        Skill skill = OSMCSkillRegistry.get(skillID);
         int level = 1;
         long xp = getSkillXp(skillID);
 

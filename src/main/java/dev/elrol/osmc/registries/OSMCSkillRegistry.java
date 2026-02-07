@@ -7,23 +7,20 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
+import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
+import dev.elrol.osmc.data.effects.MobDropMultiplierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
-import dev.elrol.osmc.data.exp.cobblemon.CaptureExpSource;
-import dev.elrol.osmc.data.exp.cobblemon.EggHatchExpSource;
-import dev.elrol.osmc.data.exp.cobblemon.EvolutionExpSource;
-import dev.elrol.osmc.data.exp.cobblemon.LevelUpExpSource;
+import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
-import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.EnchantmentTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
@@ -32,9 +29,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
-public class SkillRegistry {
+public class OSMCSkillRegistry {
     // Map of all loaded skills
     private static Map<Identifier, Skill> SKILL_MAP = new HashMap<>();
 
@@ -54,7 +50,7 @@ public class SkillRegistry {
                 RegistryOps<JsonElement> registryOps = server.getRegistryManager().getOps(JsonOps.INSTANCE);
                 Skill.CODEC.parse(registryOps, json)
                         .resultOrPartial(OSMC.LOGGER::error)
-                        .ifPresent(SkillRegistry::register);
+                        .ifPresent(OSMCSkillRegistry::register);
 
             } else {
                 OSMC.LOGGER.error("Skill failed to load from: {}", file);
@@ -62,7 +58,7 @@ public class SkillRegistry {
         }
 
         if(!(new File(OSMCConstants.SKILL_CONFIG_DIR, "example_skill.json").exists()))
-            SkillRegistry.registerExampleSkill(server);
+            OSMCSkillRegistry.registerExampleSkill(server);
     }
 
     public static void save(Skill skill, MinecraftServer server) {
@@ -94,6 +90,10 @@ public class SkillRegistry {
 
         Skill skill = new Skill(OSMCConstants.osmcID("example_skill"));
 
+          /////////////////
+         ///Exp Sources///
+        /////////////////
+
         // Block Break Exp Source
         BlockBreakExpSource bbSource = new BlockBreakExpSource(1);
         bbSource.addTarget(Blocks.DIRT);
@@ -109,26 +109,25 @@ public class SkillRegistry {
 
         // Consume Food Exp Source
         ConsumeFoodExpSource cfSource = new ConsumeFoodExpSource(1);
-        cfSource.addItem(new ItemStack(Items.APPLE));
+        cfSource.addItem(RegistryKey.of(RegistryKeys.ITEM, Identifier.ofVanilla("apple")));
         skill.addExpSource(cfSource);
 
         // Consume Potion Exp Source
         ConsumePotionExpSource cpSource = new ConsumePotionExpSource(1);
-        cpSource.addEffect(StatusEffects.REGENERATION);
-        cpSource.addEffect(StatusEffects.INSTANT_HEALTH);
-        cpSource.addEffect(StatusEffects.SPEED);
+        StatusEffects.REGENERATION.getKey().ifPresent(cpSource::addEffect);
+        StatusEffects.INSTANT_HEALTH.getKey().ifPresent(cpSource::addEffect);
+        StatusEffects.SPEED.getKey().ifPresent(cpSource::addEffect);
         skill.addExpSource(cpSource);
 
         // Craft Exp Source
         CraftExpSource cSource = new CraftExpSource(1);
-        cSource.addItem(new ItemStack(Items.STICK));
+        cSource.addItem(Items.STICK);
         skill.addExpSource(cSource);
 
         EnchantExpSource eSource = new EnchantExpSource(1);
-        Optional<RegistryEntry.Reference<Enchantment>> mending = server.getRegistryManager()
+        server.getRegistryManager()
                 .get(RegistryKeys.ENCHANTMENT)
-                .getEntry(Enchantments.MENDING);
-        eSource.addTargetEntry(mending.get());
+                .getEntry(Enchantments.MENDING).ifPresent(mending -> eSource.addTargetEntry(mending.registryKey()));
         eSource.addTargetTag(EnchantmentTags.ARMOR_EXCLUSIVE_SET);
         skill.addExpSource(eSource);
 
@@ -141,19 +140,19 @@ public class SkillRegistry {
         skill.addExpSource(ekSource);
 
         ItemUseExpSource iuSource = new ItemUseExpSource(1);
-        iuSource.addItem(new ItemStack(Items.STICK));
+        iuSource.addItem(Items.STICK);
         skill.addExpSource(iuSource);
 
         PotionBrewExpSource pbSource = new PotionBrewExpSource(1);
-        pbSource.addIngredient(new ItemStack(Items.NETHER_WART));
+        pbSource.addIngredient(Items.NETHER_WART);
         skill.addExpSource(pbSource);
 
         VillagerTradeExpSource vtSource1 = new VillagerTradeExpSource(1);
-        vtSource1.addInputItem(new ItemStack(Items.EMERALD));
+        vtSource1.addInputItem(Items.EMERALD);
         skill.addExpSource(vtSource1);
 
         VillagerTradeExpSource vtSource2 = new VillagerTradeExpSource(2);
-        vtSource2.addOutputItem(new ItemStack(Items.EMERALD));
+        vtSource2.addOutputItem(Items.EMERALD);
         skill.addExpSource(vtSource2);
 
         // Cobblemon ExpSources
@@ -169,7 +168,26 @@ public class SkillRegistry {
 
         skill.addExpSource(new LevelUpExpSource(1));
 
-        //TODO finish adding example sources
+        skill.addExpSource(new NpcBattleExpSource(1));
+
+        skill.addExpSource(new PlayerBattleExpSource(1));
+
+        skill.addExpSource(new WildBattleExpSource(1));
+
+          ///////////////////
+         ///Skill Effects///
+        ///////////////////
+
+        //Block Drop Skill Effect
+        BlockDropMultiplierSkillEffect bdmEffect = new BlockDropMultiplierSkillEffect(1, "extra", "1");
+        bdmEffect.addTarget(Items.COBBLESTONE);
+        bdmEffect.addBlock(Blocks.STONE);
+        skill.addSkillEffect(bdmEffect);
+
+        //Mob Drop Skill Effect
+        MobDropMultiplierSkillEffect mdmEffect = new MobDropMultiplierSkillEffect(3, "extra", "1");
+        mdmEffect.addTarget(Items.ROTTEN_FLESH);
+        skill.addSkillEffect(mdmEffect);
 
         register(skill);
         save(skill, server);

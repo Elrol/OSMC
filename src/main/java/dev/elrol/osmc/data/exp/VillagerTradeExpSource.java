@@ -1,26 +1,33 @@
 package dev.elrol.osmc.data.exp;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.elrol.osmc.data.ExpSource;
 import dev.elrol.osmc.data.ExpSourceType;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
+import dev.elrol.osmc.data.SkillTrigger;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.registries.ExpSourceTypeRegistry;
+import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.registries.OSMCExpSourceTypeRegistry;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.village.TradeOffer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class VillagerTradeExpSource extends ExpSource {
 
     public static final MapCodec<VillagerTradeExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
             .and(Codec.STRING.fieldOf("expFormula").forGetter(VillagerTradeExpSource::getExpFormula))
-            .and(ItemStack.CODEC.listOf().fieldOf("inputItems").forGetter(VillagerTradeExpSource::getInputItemStacks))
-            .and(ItemStack.CODEC.listOf().fieldOf("outputItems").forGetter(VillagerTradeExpSource::getOutputItemStacks)
+            .and(OSMCConstants.TARGET_ITEM_CODEC.listOf().fieldOf("inputItems").forGetter(VillagerTradeExpSource::getInputItemStacks))
+            .and(OSMCConstants.TARGET_ITEM_CODEC.listOf().fieldOf("outputItems").forGetter(VillagerTradeExpSource::getOutputItemStacks)
     ).apply(instance, (expGain, expFormula, inputItems, outputItems) -> {
         VillagerTradeExpSource data = new VillagerTradeExpSource(expGain);
         data.expFormula = expFormula;
@@ -30,26 +37,40 @@ public class VillagerTradeExpSource extends ExpSource {
     }));
 
     private String expFormula = "xp * (2*one + 1*two + 3*three)";
-    private final List<ItemStack> inputItems = new ArrayList<>();
-    private final List<ItemStack> outputItems = new ArrayList<>();
+    private final List<Either<RegistryKey<Item>, TagKey<Item>>> inputItems = new ArrayList<>();
+    private final List<Either<RegistryKey<Item>, TagKey<Item>>> outputItems = new ArrayList<>();
 
     public VillagerTradeExpSource(int expGain) {
         super(expGain);
     }
 
     public String getExpFormula() { return expFormula; }
-    public List<ItemStack> getInputItemStacks() { return inputItems; }
-    public List<ItemStack> getOutputItemStacks() { return outputItems; }
+    public List<Either<RegistryKey<Item>, TagKey<Item>>> getInputItemStacks() { return inputItems; }
+    public List<Either<RegistryKey<Item>, TagKey<Item>>> getOutputItemStacks() { return outputItems; }
 
-    public List<Item> getInputItems() { return inputItems.stream().map(ItemStack::getItem).toList(); }
-    public List<Item> getOutputItems() { return outputItems.stream().map(ItemStack::getItem).toList(); }
-
-    public void addInputItem(ItemStack item) {
-        inputItems.add(item);
+    public List<Item> getInputItems() {
+        return inputItems.stream().flatMap(
+            either -> either.map(
+                    key -> Stream.of(Registries.ITEM.get(key)),
+                    tagKey -> Registries.ITEM.getOrCreateEntryList(tagKey)
+                            .stream().map(RegistryEntry::value)
+            )).toList();
+    }
+    public List<Item> getOutputItems() {
+        return outputItems.stream().flatMap(
+                either -> either.map(
+                        key -> Stream.of(Registries.ITEM.get(key)),
+                        tagKey -> Registries.ITEM.getOrCreateEntryList(tagKey)
+                                .stream().map(RegistryEntry::value)
+                )).toList();
     }
 
-    public void addOutputItem(ItemStack item) {
-        outputItems.add(item);
+    public void addInputItem(Item item) {
+        Registries.ITEM.getKey(item).ifPresent(key -> inputItems.add(Either.left(key)));
+    }
+
+    public void addOutputItem(Item item) {
+        Registries.ITEM.getKey(item).ifPresent(key -> outputItems.add(Either.left(key)));
     }
 
     public double calculate(TradeOffer trade) {
@@ -75,11 +96,16 @@ public class VillagerTradeExpSource extends ExpSource {
 
     @Override
     public ExpSourceType<?> getType() {
-        return ExpSourceTypeRegistry.VILLAGER_TRADE_EXP_SOURCE;
+        return OSMCExpSourceTypeRegistry.VILLAGER_TRADE_EXP_SOURCE;
     }
 
     @Override
     public MapCodec<? extends ExpSource> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    public List<SkillTrigger> getTriggers() {
+        return List.of(SkillTrigger.TRADE);
     }
 }

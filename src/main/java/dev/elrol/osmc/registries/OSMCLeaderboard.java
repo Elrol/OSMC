@@ -7,15 +7,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class Leaderboard {
+public class OSMCLeaderboard {
 
     private static final Map<Identifier, TreeSet<Entry>> CACHE = new HashMap<>();
 
     public static void populate() {
         CACHE.clear();
-        Map<UUID, PlayerSkillData> playerDataMap = PlayerDataRegistry.get();
+        Map<UUID, PlayerSkillData> playerDataMap = OSMCPlayerDataRegistry.get();
 
-        SkillRegistry.getAll().forEach((id, skill) -> {
+        OSMCSkillRegistry.getAll().forEach((id, skill) -> {
             TreeSet<Entry> skillSet = new TreeSet<>();
             playerDataMap.forEach((uuid, data) -> {
                 long exp = data.getSkillXp(id);
@@ -50,7 +50,7 @@ public class Leaderboard {
 
     public record Entry(UUID uuid, long exp) implements Comparable<Entry> {
         @Override
-        public int compareTo(@NotNull Leaderboard.Entry entry) {
+        public int compareTo(@NotNull OSMCLeaderboard.Entry entry) {
             int c = Long.compare(entry.exp, exp);
             return (c == 0) ? uuid.compareTo(entry.uuid) : c;
         }

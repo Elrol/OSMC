@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PlayerDataRegistry {
+public class OSMCPlayerDataRegistry {
 
     private static final Map<UUID, PlayerSkillData> PLAYER_SKILL_DATA_MAP = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<Identifier, Integer>> EXP_BUFFER = new ConcurrentHashMap<>();
@@ -41,15 +41,15 @@ public class PlayerDataRegistry {
 
     public static void payBuffer(MinecraftServer server) {
         EXP_BUFFER.forEach((uuid, buffer) -> {
-            PlayerSkillData data = PlayerDataRegistry.get(uuid);
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(uuid);
             buffer.forEach((id, expGain) -> {
-                Skill skill = SkillRegistry.get(id);
+                Skill skill = OSMCSkillRegistry.get(id);
                 if (skill != null) {
                     int oldLevel = data.getSkillLevel(id);
                     data.addSkillExp(id, (long) expGain);
 
                     long totalExp = data.getSkillXp(id);
-                    Leaderboard.updateEntry(id, uuid, totalExp);
+                    OSMCLeaderboard.updateEntry(id, uuid, totalExp);
 
                     ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                     if (player != null) {
@@ -61,7 +61,7 @@ public class PlayerDataRegistry {
                     }
                 }
             });
-            PlayerDataRegistry.updatePlayerData(data);
+            OSMCPlayerDataRegistry.updatePlayerData(data);
         });
         EXP_BUFFER.clear();
     }
@@ -123,7 +123,7 @@ public class PlayerDataRegistry {
     }
 
     public static void save() {
-        PLAYER_SKILL_DATA_MAP.keySet().forEach(PlayerDataRegistry::save);
+        PLAYER_SKILL_DATA_MAP.keySet().forEach(OSMCPlayerDataRegistry::save);
     }
 
 }

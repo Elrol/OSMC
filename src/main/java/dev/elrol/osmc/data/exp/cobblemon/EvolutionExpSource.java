@@ -5,11 +5,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.ExpSourceType;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
+import dev.elrol.osmc.data.ExpSource;
+import dev.elrol.osmc.data.SkillTrigger;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.registries.ExpSourceTypeRegistry;
+import dev.elrol.osmc.registries.OSMCExpSourceTypeRegistry;
 
-import java.util.Map;
+import java.util.List;
 
 public class EvolutionExpSource extends ExpSource {
 
@@ -35,11 +36,16 @@ public class EvolutionExpSource extends ExpSource {
 
     @Override
     public ExpSourceType<?> getType() {
-        return ExpSourceTypeRegistry.COBBLEMON_EVOLUTION_EXP_SOURCE;
+        return OSMCExpSourceTypeRegistry.COBBLEMON_EVOLUTION_EXP_SOURCE;
     }
 
     @Override
     public MapCodec<? extends ExpSource> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    public List<SkillTrigger> getTriggers() {
+        return List.of(SkillTrigger.EVOLVE);
     }
 }

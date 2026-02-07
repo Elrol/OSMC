@@ -2,7 +2,6 @@ package dev.elrol.osmc.data;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;import net.minecraft.text.TextCodecs;
 import net.minecraft.text.TextColor;
@@ -20,19 +19,22 @@ public class Skill {
             TextColor.CODEC.fieldOf("color").forGetter(Skill::getColor),
             Codec.STRING.fieldOf("levelFormula").forGetter(Skill::getLevelFormula),
             ExpSource.CODEC.listOf().fieldOf("expSources").forGetter(Skill::getExpSources),
+            SkillEffect.CODEC.listOf().optionalFieldOf("skillEffects", new ArrayList<>()).forGetter(Skill::getSkillEffects),
             Codec.unboundedMap(Identifier.CODEC, Codec.FLOAT).fieldOf("globalChanceDrops").forGetter(Skill::getGlobalChanceDrops)
-    ).apply(instance, (enabled, id, displayName, color, levelFormula, expSources, globalChanceDrops) -> {
+    ).apply(instance, (enabled, id, displayName, color, levelFormula, expSources, skillEffects, globalChanceDrops) -> {
         Skill data = new Skill(id);
         data.enabled = enabled;
         data.displayName = displayName;
         data.color = color;
         data.levelFormula = levelFormula;
         data.expSources.addAll(expSources);
+        data.skillEffects.addAll(skillEffects);
         data.globalChanceDrops.putAll(globalChanceDrops);
         return data;
     }));
 
     protected List<ExpSource> expSources = new ArrayList<>();
+    protected List<SkillEffect> skillEffects = new ArrayList<>();
     protected Map<Identifier, Float> globalChanceDrops = new HashMap<>();
 
     protected final Identifier id;
@@ -49,11 +51,16 @@ public class Skill {
         expSources.add(source);
     }
 
+    public void addSkillEffect(SkillEffect effect) {
+        skillEffects.add(effect);
+    }
+
     public void addGlobalDrop(Identifier itemID, float chance) {
         globalChanceDrops.put(itemID, chance);
     }
 
     public List<ExpSource> getExpSources() { return expSources; }
+    public List<SkillEffect> getSkillEffects() { return skillEffects; }
     public Map<Identifier, Float> getGlobalChanceDrops() { return globalChanceDrops; }
     public Identifier getID() { return id; }
     public Text getDisplayName() { return displayName; }

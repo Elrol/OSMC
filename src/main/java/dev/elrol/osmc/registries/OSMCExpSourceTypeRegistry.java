@@ -2,12 +2,12 @@ package dev.elrol.osmc.registries;
 
 import dev.elrol.osmc.data.ExpSourceType;
 import dev.elrol.osmc.data.exp.*;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
+import dev.elrol.osmc.data.ExpSource;
 import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.registry.Registry;
 
-public class ExpSourceTypeRegistry {
+public class OSMCExpSourceTypeRegistry {
 
     public static final ExpSourceType<BlockBreakExpSource>              BREAK_EXP_SOURCE =                      register(OSMCConstants.BLOCK_BREAK_EXP_ID,              new ExpSourceType<>(BlockBreakExpSource.CODEC));
     public static final ExpSourceType<BlockInteractionExpSource>        BLOCK_INTERACT_EXP_SOURCE =             register(OSMCConstants.BLOCK_INTERACT_EXP_ID,           new ExpSourceType<>(BlockInteractionExpSource.CODEC));

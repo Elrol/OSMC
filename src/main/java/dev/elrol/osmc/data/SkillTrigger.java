@@ -1,0 +1,27 @@
+package dev.elrol.osmc.data;
+
+public enum SkillTrigger {
+    BLOCK_BREAK,
+    BLOCK_DROP,
+    BLOCK_INTERACT,
+    BREWED,
+    CRAFTED,
+    DAMAGE_DEALT,
+    DAMAGE_RECEIVED,
+    EGG_HATCH,
+    ENTITY_DROP,
+    ENTITY_KILL,
+    PLAYER_TICK,
+    CAPTURE,
+    BATTLE_END,
+    LEVEL_UP,
+    PLAYER_LEVEL_UP,
+    PLAYER_SKILL_LEVEL_UP,
+    EVOLVE,
+    REVIVE_FOSSIL,
+    CONSUME,
+    ENCHANT,
+    ENTITY_INTERACT,
+    ITEM_USE,
+    TRADE
+}

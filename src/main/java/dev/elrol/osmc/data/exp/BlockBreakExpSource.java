@@ -3,21 +3,20 @@ package dev.elrol.osmc.data.exp;
 import com.mojang.datafixers.util.Either;import com.mojang.serialization.Codec;import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.ExpSourceType;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
-import dev.elrol.osmc.registries.ExpSourceTypeRegistry;import net.minecraft.block.Block;import net.minecraft.block.BlockState;import net.minecraft.registry.Registries;import net.minecraft.registry.RegistryKeys;import net.minecraft.registry.tag.TagKey;import net.minecraft.util.Identifier;import java.util.ArrayList;
+import dev.elrol.osmc.data.ExpSource;
+import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.registries.OSMCExpSourceTypeRegistry;import net.minecraft.block.Block;import net.minecraft.block.BlockState;import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.tag.TagKey;import net.minecraft.util.Identifier;import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class BlockBreakExpSource extends ExpSource {
 
-    public static final Codec<Either<Block, TagKey<Block>>> TARGET_CODEC = Codec.either(
-            Registries.BLOCK.getCodec(),
-            TagKey.codec(RegistryKeys.BLOCK)
-    );
-
     public static final MapCodec<BlockBreakExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
-            .and(TARGET_CODEC.listOf().fieldOf("targets").forGetter(BlockBreakExpSource::getTargets))
+            .and(OSMCConstants.TARGET_BLOCK_CODEC.listOf().fieldOf("targets").forGetter(BlockBreakExpSource::getTargets))
             .and(Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockBreakExpSource::getRequiredProperties)
     ).apply(instance, (expGain, targets, requiredProperties) -> {
         BlockBreakExpSource data = new BlockBreakExpSource(expGain);
@@ -26,14 +25,14 @@ public class BlockBreakExpSource extends ExpSource {
         return data;
     }));
 
-    private final List<Either<Block, TagKey<Block>>> targets = new ArrayList<>();
+    private final List<Either<RegistryKey<Block>, TagKey<Block>>> targets = new ArrayList<>();
     private final Map<String, String> requiredProperties = new HashMap<>();
 
     public BlockBreakExpSource(int expGain) {
         super(expGain);
     }
 
-    public List<Either<Block, TagKey<Block>>> getTargets() { return targets; }
+    public List<Either<RegistryKey<Block>, TagKey<Block>>> getTargets() { return targets; }
     public Map<String, String> getRequiredProperties() { return requiredProperties; }
 
 
@@ -42,7 +41,7 @@ public class BlockBreakExpSource extends ExpSource {
      * @param target the block
      */
     public void addTarget(Block target) {
-        targets.add(Either.left(target));
+        Registries.BLOCK.getKey(target).ifPresent(key -> targets.add(Either.left(key)));
     }
 
     /**
@@ -69,11 +68,16 @@ public class BlockBreakExpSource extends ExpSource {
 
     @Override
     public ExpSourceType<?> getType() {
-        return ExpSourceTypeRegistry.BREAK_EXP_SOURCE;
+        return OSMCExpSourceTypeRegistry.BREAK_EXP_SOURCE;
     }
 
     @Override
     public MapCodec<? extends ExpSource> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    public List<SkillTrigger> getTriggers() {
+        return List.of(SkillTrigger.BLOCK_BREAK);
     }
 }

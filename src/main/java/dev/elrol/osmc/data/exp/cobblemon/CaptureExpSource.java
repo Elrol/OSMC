@@ -2,13 +2,16 @@ package dev.elrol.osmc.data.exp.cobblemon;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.ExpSourceType;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
+import dev.elrol.osmc.data.ExpSource;
+import dev.elrol.osmc.data.SkillTrigger;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.registries.ExpSourceTypeRegistry;
+import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.registries.OSMCExpSourceTypeRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,16 +21,16 @@ public class CaptureExpSource extends ExpSource {
 
     public static final MapCodec<CaptureExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
             .and(Codec.STRING.fieldOf("expFormula").forGetter(CaptureExpSource::getExpFormula))
-            .and(Species.getBY_IDENTIFIER_CODEC().listOf().fieldOf("species").forGetter(CaptureExpSource::getSpecies)
-    ).apply(instance, (expGain, expFormula, species) -> {
+            .and(OSMCConstants.TARGET_SPECIES_CODEC.listOf().fieldOf("targets").forGetter(CaptureExpSource::getTargets)
+    ).apply(instance, (expGain, expFormula, targets) -> {
         CaptureExpSource data = new CaptureExpSource(expGain);
         data.expFormula = expFormula;
-        data.species.addAll(species);
+        data.targets.addAll(targets);
         return data;
     }));
 
     private String expFormula = "(p_level + ball_modifier * (1 + p_shiny)) * (1 + p_legendary)";
-    List<Species> species = new ArrayList<>();
+    List<Either<Species, String>> targets = new ArrayList<>();
 
     public CaptureExpSource(int expGain) {
         super(expGain);
@@ -35,7 +38,7 @@ public class CaptureExpSource extends ExpSource {
 
     public String getExpFormula() { return expFormula; }
 
-    public List<Species> getSpecies() { return species; }
+    public List<Either<Species, String>> getTargets() { return targets; }
 
     // (p_level + ball_modifier * (1 + p_shiny)) * (1 + p_legendary)
     public double calculate(Pokemon pokemon, float ballModifier) {
@@ -47,7 +50,7 @@ public class CaptureExpSource extends ExpSource {
 
     @Override
     public ExpSourceType<?> getType() {
-        return ExpSourceTypeRegistry.COBBLEMON_CAPTURE_EXP_SOURCE;
+        return OSMCExpSourceTypeRegistry.COBBLEMON_CAPTURE_EXP_SOURCE;
     }
 
     @Override
@@ -55,5 +58,10 @@ public class CaptureExpSource extends ExpSource {
         return CODEC;
     }
 
-    public void addSpecies(Species newSpecies) { species.add(newSpecies); }
+    @Override
+    public List<SkillTrigger> getTriggers() {
+        return List.of(SkillTrigger.CAPTURE);
+    }
+
+    public void addSpecies(Species newSpecies) { targets.add(Either.left(newSpecies)); }
 }

@@ -11,11 +11,7 @@ import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.libs.OSMCConstants;
-import dev.elrol.osmc.registries.ExpSourceRegistry;
-import dev.elrol.osmc.registries.Leaderboard;
-import dev.elrol.osmc.registries.PlayerDataRegistry;
-import dev.elrol.osmc.registries.SkillRegistry;
+import dev.elrol.osmc.registries.*;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -24,14 +20,12 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.HoverEvent;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 
 public class OSMCCommand extends BaseCommand {
@@ -81,14 +75,14 @@ public class OSMCCommand extends BaseCommand {
     }
 
     private static CompletableFuture<Suggestions> SkillSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
-        return CommandSource.suggestIdentifiers(SkillRegistry.getAll().keySet(), builder);
+        return CommandSource.suggestIdentifiers(OSMCSkillRegistry.getAll().keySet(), builder);
     }
 
     private static int setPlayerSkillLevel(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "target");
         if(player != null) {
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
-            Skill skill = SkillRegistry.get(skillID);
+            Skill skill = OSMCSkillRegistry.get(skillID);
             if(skill == null) return 0;
 
             int level = IntegerArgumentType.getInteger(context, "level");
@@ -113,7 +107,7 @@ public class OSMCCommand extends BaseCommand {
         if(player != null) {
             long exp = LongArgumentType.getLong(context, "exp");
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
-            Skill skill = SkillRegistry.get(skillID);
+            Skill skill = OSMCSkillRegistry.get(skillID);
 
             if(skill == null) return 0;
 
@@ -133,7 +127,7 @@ public class OSMCCommand extends BaseCommand {
         ServerCommandSource source = context.getSource();
         if(source.isExecutedByPlayer()) {
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
-            Skill skill = SkillRegistry.get(skillID);
+            Skill skill = OSMCSkillRegistry.get(skillID);
             ServerPlayerEntity player = source.getPlayer();
             if(player == null || skill == null) return 0;
 
@@ -157,7 +151,7 @@ public class OSMCCommand extends BaseCommand {
         ServerCommandSource source = context.getSource();
         if(source.isExecutedByPlayer()) {
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
-            Skill skill = SkillRegistry.get(skillID);
+            Skill skill = OSMCSkillRegistry.get(skillID);
             ServerPlayerEntity player = source.getPlayer();
             if(player == null || skill == null) return 0;
 
@@ -175,15 +169,15 @@ public class OSMCCommand extends BaseCommand {
     }
 
     private static void setSkillExp(Identifier skillID, ServerPlayerEntity player, long exp) {
-        PlayerSkillData data = PlayerDataRegistry.get(player.getUuid());
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
         data.setSkillExp(skillID, exp);
-        PlayerDataRegistry.updatePlayerData(data);
+        OSMCPlayerDataRegistry.updatePlayerData(data);
     }
 
     private static void changeSkillExp(Identifier skillID, ServerPlayerEntity player, long exp) {
-        PlayerSkillData data = PlayerDataRegistry.get(player.getUuid());
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
         data.addSkillExp(skillID, exp);
-        PlayerDataRegistry.updatePlayerData(data);
+        OSMCPlayerDataRegistry.updatePlayerData(data);
     }
 
     private static int showSkills(CommandContext<ServerCommandSource> context) {
@@ -225,28 +219,29 @@ public class OSMCCommand extends BaseCommand {
 
         OSMC.CONFIG = OSMC.CONFIG.load();
 
-        SkillRegistry.load(context.getSource().getServer());
-        ExpSourceRegistry.rebuild(SkillRegistry.getAll(), context.getSource().getRegistryManager());
+        OSMCSkillRegistry.load(context.getSource().getServer());
+        OSMCExpSourceRegistry.rebuild(OSMCSkillRegistry.getAll(), context.getSource().getRegistryManager());
+        OSMCSkillEffectRegistry.rebuild(OSMCSkillRegistry.getAll(), context.getSource().getRegistryManager());
 
         MathUtils.load();
 
         OSMC.LOGGER.info("Loading all player skill data");
-        PlayerDataRegistry.init();
+        OSMCPlayerDataRegistry.init();
 
-        Leaderboard.populate();
+        OSMCLeaderboard.populate();
         return 1;
     }
 
     private static void displayOneSkill(ServerCommandSource source, ServerPlayerEntity target, Identifier id) {
         sendSkillHeader(source, target);
-        PlayerSkillData data = PlayerDataRegistry.get(target.getUuid());
-        displaySkill(source, data.getSkillInfo(id), Objects.requireNonNull(SkillRegistry.get(id)));
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
+        displaySkill(source, data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id)));
     }
 
     private static void displayAllSkills(ServerCommandSource source, ServerPlayerEntity target) {
         sendSkillHeader(source, target);
-        PlayerSkillData data = PlayerDataRegistry.get(target.getUuid());
-        data.getSkillExpMap().keySet().forEach(id -> displaySkill(source, data.getSkillInfo(id), Objects.requireNonNull(SkillRegistry.get(id))));
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
+        data.getSkillExpMap().keySet().forEach(id -> displaySkill(source, data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id))));
     }
 
     private static void sendSkillHeader(ServerCommandSource source, ServerPlayerEntity target) {
@@ -265,12 +260,12 @@ public class OSMCCommand extends BaseCommand {
 
     private static int displayLeaderboard(CommandContext<ServerCommandSource> context) {
         Identifier id = context.getArgument("skill", Identifier.class);
-        List<Leaderboard.Entry> entries = Leaderboard.get(id);
+        List<OSMCLeaderboard.Entry> entries = OSMCLeaderboard.get(id);
 
         ServerCommandSource source = context.getSource();
         sendLeaderboardHeader(source, id);
         int rank = 1;
-        for (Leaderboard.Entry entry : entries) {
+        for (OSMCLeaderboard.Entry entry : entries) {
             displayEntry(source, id, entry, rank);
             rank++;
         }
@@ -278,7 +273,7 @@ public class OSMCCommand extends BaseCommand {
     }
 
     private static void sendLeaderboardHeader(ServerCommandSource source, Identifier skillID) {
-        Skill skill = SkillRegistry.get(skillID);
+        Skill skill = OSMCSkillRegistry.get(skillID);
         if(skill == null) {
             source.sendMessage(Text.literal("Skill not found").formatted(Formatting.RED));
             return;
@@ -288,9 +283,9 @@ public class OSMCCommand extends BaseCommand {
                 .append(" Leaderboard:"));
     }
 
-    private static void displayEntry(ServerCommandSource source, Identifier skillID, Leaderboard.Entry entry, int rank) {
+    private static void displayEntry(ServerCommandSource source, Identifier skillID, OSMCLeaderboard.Entry entry, int rank) {
         Formatting color = Formatting.GRAY;
-        PlayerSkillData data = PlayerDataRegistry.get(entry.uuid());
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(entry.uuid());
         source.sendMessage(Text.literal(" ").append(Text.literal(rank > 9 ? "│" + rank + "│ " : "│ " + rank + "│ ").formatted(color))
                 .append(data.getUsername())
                 .styled(s -> s.withHoverEvent(new HoverEvent(

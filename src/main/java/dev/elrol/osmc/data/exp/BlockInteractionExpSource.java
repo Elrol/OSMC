@@ -4,13 +4,15 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.elrol.osmc.data.ExpSource;
 import dev.elrol.osmc.data.ExpSourceType;
-import dev.elrol.osmc.data.exp.abstractexps.ExpSource;
-import dev.elrol.osmc.registries.ExpSourceTypeRegistry;
+import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.registries.OSMCExpSourceTypeRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 
@@ -21,13 +23,8 @@ import java.util.Map;
 
 public class BlockInteractionExpSource extends ExpSource {
 
-    public static final Codec<Either<Block, TagKey<Block>>> TARGET_CODEC = Codec.either(
-            Registries.BLOCK.getCodec(),
-            TagKey.codec(RegistryKeys.BLOCK)
-    );
-
     public static final MapCodec<BlockInteractionExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
-            .and(TARGET_CODEC.listOf().fieldOf("targets").forGetter(BlockInteractionExpSource::getTargets))
+            .and(OSMCConstants.TARGET_BLOCK_CODEC.listOf().fieldOf("targets").forGetter(BlockInteractionExpSource::getTargets))
             .and(Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockInteractionExpSource::getRequiredProperties)
     ).apply(instance, (expGain, targets, requiredProperties) -> {
         BlockInteractionExpSource data = new BlockInteractionExpSource(expGain);
@@ -36,21 +33,21 @@ public class BlockInteractionExpSource extends ExpSource {
         return data;
     }));
 
-    private final List<Either<Block, TagKey<Block>>> targets = new ArrayList<>();
+    private final List<Either<RegistryKey<Block>, TagKey<Block>>> targets = new ArrayList<>();
     private final Map<String, String> requiredProperties = new HashMap<>();
 
     public BlockInteractionExpSource(int expGain) {
         super(expGain);
     }
 
-    public List<Either<Block, TagKey<Block>>> getTargets() { return targets; }
+    public List<Either<RegistryKey<Block>, TagKey<Block>>> getTargets() { return targets; }
     public Map<String, String> getRequiredProperties() { return requiredProperties; }
 
     /**
      * Adds the target block to this source
      * @param target the block
      */
-    public void addTarget(Block target) {
+    public void addTarget(RegistryKey<Block> target) {
         targets.add(Either.left(target));
     }
 
@@ -78,11 +75,16 @@ public class BlockInteractionExpSource extends ExpSource {
 
     @Override
     public ExpSourceType<?> getType() {
-        return ExpSourceTypeRegistry.BLOCK_INTERACT_EXP_SOURCE;
+        return OSMCExpSourceTypeRegistry.BLOCK_INTERACT_EXP_SOURCE;
     }
 
     @Override
     public MapCodec<? extends ExpSource> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    public List<SkillTrigger> getTriggers() {
+        return List.of(SkillTrigger.BLOCK_INTERACT);
     }
 }

@@ -1,16 +1,30 @@
 package dev.elrol.osmc.libs;
 
+import com.cobblemon.mod.common.pokemon.Species;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.ExpSourceType;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.registries.PlayerDataRegistry;
-import dev.elrol.osmc.registries.SkillRegistry;
+import dev.elrol.osmc.data.SkillEffectType;
+import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
+import dev.elrol.osmc.registries.OSMCSkillRegistry;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.block.Block;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.damage.DamageType;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.item.Item;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -28,9 +42,11 @@ public class OSMCConstants {
 
     // Identifiers
     public static final Identifier EXP_TYPE_ID = Identifier.of(MODID, "exp_data_type");
+    public static final Identifier EFFECT_TYPE_ID = Identifier.of(MODID, "effect_data_type");
 
     // Registry Keys
     public static final RegistryKey<Registry<ExpSourceType<?>>> EXP_TYPE_KEY = RegistryKey.ofRegistry(EXP_TYPE_ID);
+    public static final RegistryKey<Registry<SkillEffectType<?>>> EFFECT_TYPE_KEY = RegistryKey.ofRegistry(EFFECT_TYPE_ID);
 
     // Files
     public static final File ROOT_DIR = FabricLoader.getInstance().getGameDir().toFile();
@@ -62,6 +78,23 @@ public class OSMCConstants {
     public static final String COBBLEMON_LEVEL_UP_EXP_ID =          "cobblemon_level_up";
     public static final String COBBLEMON_FOSSIL_REVIVE_EXP_ID =     "cobblemon_fossil_revive";
 
+    // Skill Effect Type IDs
+    public static final String BLOCK_DROP_MULTIPLIER_EFFECT_ID =    "block_drop_multiplier";
+    public static final String DAMAGE_MITIGATION_EFFECT_ID =        "damage_mitigation";
+    public static final String MOB_DROP_MULTIPLIER_EFFECT_ID =      "mob_drop_multiplier";
+    public static final String STAT_MODIFIER_EFFECT_ID =            "stat_modifier";
+
+
+    // Codecs
+    public static final Codec<Either<RegistryKey<Item>, TagKey<Item>>>                          TARGET_ITEM_CODEC           = Codec.either(RegistryKey.createCodec(RegistryKeys.ITEM), TagKey.codec(RegistryKeys.ITEM));
+    public static final Codec<Either<RegistryKey<Block>, TagKey<Block>>>                        TARGET_BLOCK_CODEC          = Codec.either(RegistryKey.createCodec(RegistryKeys.BLOCK), TagKey.codec(RegistryKeys.BLOCK));
+    public static final Codec<Either<RegistryKey<Enchantment>, TagKey<Enchantment>>>            TARGET_ENCHANTMENT_CODEC    = Codec.either(RegistryKey.createCodec(RegistryKeys.ENCHANTMENT), TagKey.codec(RegistryKeys.ENCHANTMENT));
+    public static final Codec<Either<RegistryKey<DamageType>, TagKey<DamageType>>>              TARGET_DAMAGE_TYPE_CODEC    = Codec.either(RegistryKey.createCodec(RegistryKeys.DAMAGE_TYPE), TagKey.codec(RegistryKeys.DAMAGE_TYPE));
+    public static final Codec<Either<RegistryKey<StatusEffect>, TagKey<StatusEffect>>>          TARGET_STATUS_EFFECT_CODEC  = Codec.either(RegistryKey.createCodec(RegistryKeys.STATUS_EFFECT), TagKey.codec(RegistryKeys.STATUS_EFFECT));
+    public static final Codec<Either<RegistryKey<EntityType<?>>, TagKey<EntityType<?>>>>        TARGET_ENTITY_TYPE_CODEC    = Codec.either(RegistryKey.createCodec(RegistryKeys.ENTITY_TYPE), TagKey.codec(RegistryKeys.ENTITY_TYPE));
+
+    public static final Codec<Either<Species, String>>                                          TARGET_SPECIES_CODEC        = Codec.either(Species.getBY_IDENTIFIER_CODEC(), Codec.STRING);
+
     public static Gson makeGSON() {
         return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     }
@@ -86,10 +119,10 @@ public class OSMCConstants {
 
     public static void levelUpNotification(ServerPlayerEntity player, Identifier skillID) {
         boolean global = OSMC.CONFIG.getSendLevelUpToGlobal();
-        Skill skill = SkillRegistry.get(skillID);
+        Skill skill = OSMCSkillRegistry.get(skillID);
         if(skill == null) return;
 
-        PlayerSkillData data = PlayerDataRegistry.get(player.getUuid());
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
 
         player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f, 0.5f);
         Text text = Text.empty()

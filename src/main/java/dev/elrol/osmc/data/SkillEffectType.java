@@ -6,6 +6,6 @@ import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.SimpleRegistry;
 
-public record ExpSourceType<T extends ExpSource> (MapCodec<T> codec) {
-    public static final Registry<ExpSourceType<?>> REGISTRY = new SimpleRegistry<>(OSMCConstants.EXP_TYPE_KEY, Lifecycle.stable());
+public record SkillEffectType<T extends SkillEffect> (MapCodec<T> codec) {
+    public static final Registry<SkillEffectType<?>> REGISTRY = new SimpleRegistry<>(OSMCConstants.EFFECT_TYPE_KEY, Lifecycle.stable());
 }

@@ -1,11 +1,11 @@
-package dev.elrol.osmc.data.exp.abstractexps;
+package dev.elrol.osmc.data;
 
 import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import dev.elrol.osmc.data.ExpSourceType;
 
+import java.util.List;
 import java.util.Map;
 
 public abstract class ExpSource {
@@ -23,6 +23,7 @@ public abstract class ExpSource {
 
     public abstract ExpSourceType<?> getType();
     public abstract MapCodec<? extends ExpSource> getCodec();
+    public abstract List<SkillTrigger> getTriggers();
 
     protected Map<String, Double> getVariables() { return Map.of("xp", (double) getExpGain()); }
 
