@@ -8,7 +8,9 @@ import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
+import dev.elrol.osmc.data.effects.DamageMitigationSkillEffect;
 import dev.elrol.osmc.data.effects.MobDropMultiplierSkillEffect;
+import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.libs.JsonUtils;
@@ -16,12 +18,15 @@ import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.tag.EnchantmentTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -187,7 +192,16 @@ public class OSMCSkillRegistry {
         //Mob Drop Skill Effect
         MobDropMultiplierSkillEffect mdmEffect = new MobDropMultiplierSkillEffect(3, "extra", "1");
         mdmEffect.addTarget(Items.ROTTEN_FLESH);
+        mdmEffect.addEntity(EntityType.DROWNED);
         skill.addSkillEffect(mdmEffect);
+
+        //Damage Mitigation Skill Effect
+        DamageMitigationSkillEffect dmEffect = new DamageMitigationSkillEffect(2, "level * extra", "0.5");
+        dmEffect.addDamageType(DamageTypes.CACTUS);
+        dmEffect.addDamageTag(TagKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.ofVanilla("melee")));
+        skill.addSkillEffect(dmEffect);
+
+        skill.addSkillEffect(new StatModifierSkillEffect(1, "level * 2", "level", Identifier.ofVanilla("generic.step_height"), EntityAttributeModifier.Operation.ADD_VALUE));
 
         register(skill);
         save(skill, server);

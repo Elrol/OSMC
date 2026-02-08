@@ -6,10 +6,8 @@ import com.cobblemon.mod.common.battles.actor.PlayerBattleActor;
 import com.cobblemon.mod.common.battles.actor.PokemonBattleActor;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
-import dev.elrol.osmc.data.BoundEffect;
-import dev.elrol.osmc.data.BoundSource;
-import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.data.*;
+import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.data.functions.BlockDropLootFunction;
@@ -18,7 +16,6 @@ import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.libs.MathUtils;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -50,6 +47,16 @@ public class OSMCEventRegistry {
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
+
+        SkillLevelUpEvent.EVENT.register((player, skillID, level) -> {
+            List<BoundEffect<?>> effects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.LEVEL_UP);
+
+            effects.forEach(boundEffect -> {
+                if(boundEffect.effect() instanceof StatModifierSkillEffect effect) {
+                    effect.updateAttribute(player, skillID, level);
+                }
+            });
+        });
 
         CobblemonEvents.EVOLUTION_COMPLETE.subscribe(event -> {
             Pokemon pokemon = event.getPokemon();
@@ -297,6 +304,10 @@ public class OSMCEventRegistry {
             }
         });
 
+        ServerPlayerEvents.AFTER_RESPAWN.register(((oldPlayer, player, b) -> {
+            refreshStatModifiers(player);
+        }));
+
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             OSMCSkillRegistry.init(server);
 
@@ -313,7 +324,26 @@ public class OSMCEventRegistry {
             OSMCPlayerDataRegistry.save();
         });
 
+        ServerPlayerEvents.JOIN.register((player) -> {
+            OSMCPlayerDataRegistry.load(player);
+            refreshStatModifiers(player);
+        });
+
         ServerPlayerEvents.LEAVE.register(OSMCPlayerDataRegistry::save);
-        ServerPlayerEvents.JOIN.register(OSMCPlayerDataRegistry::load);
+    }
+
+    private static void refreshStatModifiers(ServerPlayerEntity player) {
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+
+        List<BoundEffect<?>> effects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.LOGIN);
+
+        data.getSkillExpMap().keySet().forEach(skillID -> {
+            int level = data.getSkillLevel(skillID);
+            effects.forEach(boundEffect -> {
+                if(boundEffect.skillID().equals(skillID) && boundEffect.effect() instanceof StatModifierSkillEffect effect) {
+                    effect.updateAttribute(player, skillID, level);
+                }
+            });
+        });
     }
 }

@@ -23,5 +23,6 @@ public enum SkillTrigger {
     ENCHANT,
     ENTITY_INTERACT,
     ITEM_USE,
-    TRADE
+    TRADE,
+    LOGIN
 }

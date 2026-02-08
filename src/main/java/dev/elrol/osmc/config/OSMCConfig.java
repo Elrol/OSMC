@@ -10,6 +10,10 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
+import net.minecraft.util.Identifier;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class OSMCConfig {
     private static final String FILENAME = "config.json";
@@ -20,8 +24,9 @@ public class OSMCConfig {
             Codec.INT.fieldOf("maxLevel").forGetter(OSMCConfig::getMaxLevel),
             Codec.INT.fieldOf("autosave").forGetter(OSMCConfig::getAutoSave),
             Codec.INT.fieldOf("expPayout").forGetter(OSMCConfig::getExpPayout),
-            Codec.INT.fieldOf("leaderboardCount").forGetter(OSMCConfig::getLeaderboardCount)
-    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount) -> {
+            Codec.INT.fieldOf("leaderboardCount").forGetter(OSMCConfig::getLeaderboardCount),
+            DamageMitigationConfig.CODEC.fieldOf("damageMitigation").forGetter(OSMCConfig::getDamageMitigation)
+    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, damageMitigation) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
@@ -31,6 +36,8 @@ public class OSMCConfig {
         data.autoSave = autosave;
         data.expPayout = expPayout;
         data.leaderboardCount = leaderboardCount;
+
+        data.damageMitigation = damageMitigation;
 
         return data;
     }));
@@ -43,6 +50,7 @@ public class OSMCConfig {
     private int expPayout = 20;
     private int leaderboardCount = 5;
 
+    private DamageMitigationConfig damageMitigation = new DamageMitigationConfig();
 
     public boolean getDebug() { return isDebug; }
 
@@ -55,6 +63,8 @@ public class OSMCConfig {
     public int getExpPayout() { return expPayout; }
 
     public int getLeaderboardCount() { return leaderboardCount; }
+
+    public DamageMitigationConfig getDamageMitigation() { return damageMitigation; }
 
     public void save() {
         DataResult<JsonElement> jsonResult = CODEC.encodeStart(JsonOps.INSTANCE, this);
@@ -71,5 +81,27 @@ public class OSMCConfig {
             save();
             return this;
         }
+    }
+
+    public static class DamageMitigationConfig {
+        public static final Codec<DamageMitigationConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.unboundedMap(Identifier.CODEC, Codec.FLOAT).fieldOf("sourceLimits").forGetter(DamageMitigationConfig::getSourceLimits)
+        ).apply(instance, (sourceLimits) -> {
+            DamageMitigationConfig data = new DamageMitigationConfig();
+            data.sourceLimits.putAll(sourceLimits);
+            return data;
+        }));
+
+        Map<Identifier, Float> sourceLimits = new HashMap<>();
+
+        public void addSourceLimit(Identifier id, float limit) {
+            sourceLimits.put(id, limit);
+        }
+
+        public float getSourceLimit(Identifier id) {
+            return sourceLimits.getOrDefault(id, 0f);
+        }
+
+        public Map<Identifier, Float> getSourceLimits() { return sourceLimits; }
     }
 }

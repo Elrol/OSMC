@@ -5,6 +5,7 @@ import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.Skill;
+import dev.elrol.osmc.events.SkillLevelUpEvent;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.entity.player.PlayerEntity;
@@ -57,7 +58,10 @@ public class OSMCPlayerDataRegistry {
                         PlayerSkillData.SkillExpInfo info = data.getSkillInfo(id);
                         String message = "Gained " + expGain + " exp. Level: " + info.level() + " [" + info.currentExp() + "/" + info.targetExp() + "]";
                         OSMCConstants.sendExpMessage(player, skill, message);
-                        if (oldLevel < newLevel) OSMCConstants.levelUpNotification(player, id);
+                        if (oldLevel < newLevel) {
+                            OSMCConstants.levelUpNotification(player, id);
+                            SkillLevelUpEvent.EVENT.invoker().onLevelUp(player, id, newLevel);
+                        }
                     }
                 }
             });

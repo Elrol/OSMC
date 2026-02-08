@@ -21,27 +21,35 @@ import java.util.Map;
 public class DamageMitigationSkillEffect extends SkillEffect {
 
     public static final MapCodec<DamageMitigationSkillEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> SkillEffect.getCommonCodec(instance)
-            .and(Codec.STRING.fieldOf("chanceFormula").forGetter(DamageMitigationSkillEffect::getChanceFormula))
-            .and(OSMCConstants.TARGET_DAMAGE_TYPE_CODEC.listOf().fieldOf("damageTypes").forGetter(DamageMitigationSkillEffect::damageTypes)
-    ).apply(instance, (reqLevel, expGainFormula, chanceFormula, damageTypes) -> {
-        DamageMitigationSkillEffect data = new DamageMitigationSkillEffect(reqLevel, expGainFormula, chanceFormula);
+            .and(Codec.STRING.fieldOf("damageReductionFormula").forGetter(DamageMitigationSkillEffect::getDamageReductionFormula))
+            .and(OSMCConstants.TARGET_DAMAGE_TYPE_CODEC.listOf().fieldOf("damageTypes").forGetter(DamageMitigationSkillEffect::getDamageTypes)
+    ).apply(instance, (reqLevel, expGainFormula, damageReductionFormula, damageTypes) -> {
+        DamageMitigationSkillEffect data = new DamageMitigationSkillEffect(reqLevel, expGainFormula, damageReductionFormula);
         data.damageTypes.addAll(damageTypes);
         return data;
     }));
 
-    private final String chanceFormula;
+    private final String damageReductionFormula;
     private final List<Either<RegistryKey<DamageType>, TagKey<DamageType>>> damageTypes = new ArrayList<>();
 
-    public DamageMitigationSkillEffect(int reqLevel, String expGainFormula, String chanceFormula) {
+    public DamageMitigationSkillEffect(int reqLevel, String expGainFormula, String damageReductionFormula) {
         super(reqLevel, expGainFormula);
-        this.chanceFormula = chanceFormula;
+        this.damageReductionFormula = damageReductionFormula;
     }
 
-    public String getChanceFormula() { return chanceFormula; }
-    public List<Either<RegistryKey<DamageType>, TagKey<DamageType>>> damageTypes() { return damageTypes; }
+    public void addDamageType(RegistryKey<DamageType> type) {
+        damageTypes.add(Either.left(type));
+    }
+
+    public void addDamageTag(TagKey<DamageType> tagKey) {
+        damageTypes.add(Either.right(tagKey));
+    }
+
+    public String getDamageReductionFormula() { return damageReductionFormula; }
+    public List<Either<RegistryKey<DamageType>, TagKey<DamageType>>> getDamageTypes() { return damageTypes; }
 
     public float calculateDamage(int skillLevel, float damage) {
-        return (float) MathUtils.calculate(getChanceFormula(), Map.of(
+        return (float) MathUtils.calculate(getDamageReductionFormula(), Map.of(
                 "level", (double) skillLevel,
                 "damage", (double) damage));
     }

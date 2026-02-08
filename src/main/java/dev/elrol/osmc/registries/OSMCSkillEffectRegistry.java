@@ -2,13 +2,12 @@ package dev.elrol.osmc.registries;
 
 import com.mojang.datafixers.util.Either;
 import dev.elrol.osmc.OSMC;
-import dev.elrol.osmc.data.BoundEffect;
-import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.SkillEffect;
-import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.data.*;
 import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
 import dev.elrol.osmc.data.effects.DamageMitigationSkillEffect;
+import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
@@ -23,6 +22,10 @@ import java.util.Map;
 public class OSMCSkillEffectRegistry {
 
     private static final Map<SkillTrigger, Map<Object, List<BoundEffect<?>>>> TRIGGER_CACHE = new EnumMap<>(SkillTrigger.class);
+
+    public static List<BoundEffect<?>> getEffects(SkillTrigger trigger) {
+        return getEffects(trigger, "GLOBAL");
+    }
 
     public static List<BoundEffect<?>> getEffects(SkillTrigger trigger, Object target) {
         Map<Object, List<BoundEffect<?>>> cache = TRIGGER_CACHE.get(trigger);
@@ -49,11 +52,32 @@ public class OSMCSkillEffectRegistry {
         Map<Object, List<BoundEffect<?>>> cache = TRIGGER_CACHE.computeIfAbsent(trigger, a -> new Reference2ObjectOpenHashMap<>());
 
         switch(effect) {
-            case BlockDropMultiplierSkillEffect blockDropMultEffect -> blockDropMultEffect.getTargets().forEach(either ->
-                    indexGenericEither(cache, either, blockDropMultEffect, id, registryManager.getWrapperOrThrow(RegistryKeys.ITEM)));
-            case DamageMitigationSkillEffect damageMitigationEffect -> damageMitigationEffect.damageTypes().forEach(either ->
-                    indexGenericEither(cache, either, damageMitigationEffect, id, registryManager.getWrapperOrThrow(RegistryKeys.DAMAGE_TYPE)));
+            case BlockDropMultiplierSkillEffect blockDropMultEffect ->
+                indexOrGlobal(cache, blockDropMultEffect.getTargets(), blockDropMultEffect, id, registryManager, RegistryKeys.ITEM);
+            case DamageMitigationSkillEffect damageMitigationEffect ->
+                    indexOrGlobal(cache, damageMitigationEffect.getDamageTypes(), damageMitigationEffect, id, registryManager, RegistryKeys.DAMAGE_TYPE);
+            case StatModifierSkillEffect statModifierEffect ->
+                    addBoundEffect(cache, statModifierEffect, id);
             default -> {}
+        }
+    }
+
+    private static void addBoundEffect(Map<Object, List<BoundEffect<?>>> cache, Object key, SkillEffect effect, Identifier id) {
+        if(OSMC.CONFIG.getDebug()) OSMC.LOGGER.warn("Adding bound effect: {} [{}]", key, effect.getType());
+        cache.computeIfAbsent(key, obj -> new ArrayList<>())
+                .add(new BoundEffect<>(effect, id));
+    }
+
+    private static void addBoundEffect(Map<Object, List<BoundEffect<?>>> cache, SkillEffect effect, Identifier id) {
+        addBoundEffect(cache, "GLOBAL", effect, id);
+    }
+
+    private static <S, T extends SkillEffect> void indexOrGlobal(Map<Object, List<BoundEffect<?>>> cache, List<Either<RegistryKey<S>, TagKey<S>>> targets, T effect, Identifier id, RegistryWrapper.WrapperLookup registryManager, RegistryKey<Registry<S>> registryKey) {
+        if(targets == null || targets.isEmpty()) {
+            addBoundEffect(cache, effect, id);
+        } else {
+            RegistryWrapper<S> wrapper = registryManager.getWrapperOrThrow(registryKey);
+            targets.forEach(either -> indexGenericEither(cache, either, effect, id, wrapper));
         }
     }
 
@@ -65,11 +89,5 @@ public class OSMCSkillEffectRegistry {
                         wrapper.getOptional(right)
                                 .ifPresent(entryList ->
                                         entryList.forEach(entry -> addBoundEffect(cache, entry.value(), effect, id))));
-    }
-
-    private static void addBoundEffect(Map<Object, List<BoundEffect<?>>> cache, Object key, SkillEffect effect, Identifier id) {
-        if(OSMC.CONFIG.getDebug()) OSMC.LOGGER.warn("Adding bound effect: {} [{}]", key, effect.getType());
-        cache.computeIfAbsent(key, obj -> new ArrayList<>())
-                .add(new BoundEffect<>(effect, id));
     }
 }
