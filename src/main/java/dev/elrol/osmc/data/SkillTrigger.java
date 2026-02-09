@@ -24,5 +24,7 @@ public enum SkillTrigger {
     ENTITY_INTERACT,
     ITEM_USE,
     TRADE,
-    LOGIN
+    LOGIN,
+    BLOCK_BRUSH,
+    LOOT_ROLL
 }

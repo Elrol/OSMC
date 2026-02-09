@@ -29,6 +29,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.item.Item;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -47,6 +48,20 @@ public class OSMCEventRegistry {
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
+
+        BlockBrushEvent.EVENT.register((player, state) -> {
+            Registries.BLOCK.getKey(state.getBlock()).ifPresent(key -> {
+                List<BoundSource<?>> sources = OSMCExpSourceRegistry.getSources(SkillTrigger.BLOCK_BRUSH, key);
+
+                sources.forEach(boundSource -> {
+                    if(boundSource.source() instanceof BlockBrushExpSource source) {
+                        if(source.hasProperties(state)) {
+                            OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.getExpGain());
+                        }
+                    }
+                });
+            });
+        });
 
         SkillLevelUpEvent.EVENT.register((player, skillID, level) -> {
             List<BoundEffect<?>> effects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.LEVEL_UP);

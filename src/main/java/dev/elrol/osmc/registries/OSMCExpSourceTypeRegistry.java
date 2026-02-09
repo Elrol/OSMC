@@ -11,6 +11,7 @@ public class OSMCExpSourceTypeRegistry {
 
     public static final ExpSourceType<BlockBreakExpSource>              BREAK_EXP_SOURCE =                      register(OSMCConstants.BLOCK_BREAK_EXP_ID,              new ExpSourceType<>(BlockBreakExpSource.CODEC));
     public static final ExpSourceType<BlockInteractionExpSource>        BLOCK_INTERACT_EXP_SOURCE =             register(OSMCConstants.BLOCK_INTERACT_EXP_ID,           new ExpSourceType<>(BlockInteractionExpSource.CODEC));
+    public static final ExpSourceType<BlockBrushExpSource>              BRUSH_EXP_SOURCE =                      register(OSMCConstants.BLOCK_BRUSH_EXP_ID,              new ExpSourceType<>(BlockBrushExpSource.CODEC));
     public static final ExpSourceType<ConsumeFoodExpSource>             CONSUME_FOOD_EXP_SOURCE =               register(OSMCConstants.CONSUME_FOOD_EXP_ID,             new ExpSourceType<>(ConsumeFoodExpSource.CODEC));
     public static final ExpSourceType<ConsumePotionExpSource>           CONSUME_POTION_EXP_SOURCE =             register(OSMCConstants.CONSUME_POTION_EXP_ID,           new ExpSourceType<>(ConsumePotionExpSource.CODEC));
     public static final ExpSourceType<CraftExpSource>                   CRAFT_EXP_SOURCE =                      register(OSMCConstants.CRAFT_EXP_ID,                    new ExpSourceType<>(CraftExpSource.CODEC));

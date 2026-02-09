@@ -10,7 +10,7 @@ import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.SkillTrigger;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -51,15 +51,17 @@ public class OSMCExpSourceRegistry {
     }
 
     private static <T extends ExpSource> void indexEffect(SkillTrigger trigger,T source, Identifier id, RegistryWrapper.WrapperLookup registryManager) {
-        Map<Object, List<BoundSource<?>>> cache = TRIGGER_CACHE.computeIfAbsent(trigger, a -> new Reference2ObjectOpenHashMap<>());
+        Map<Object, List<BoundSource<?>>> cache = TRIGGER_CACHE.computeIfAbsent(trigger, a -> new Object2ObjectOpenHashMap<>());
 
         switch (source) {
             case BlockBreakExpSource breakSource ->
-                indexOrGlobal(cache, breakSource.getTargets(), breakSource, id, registryManager, RegistryKeys.BLOCK);
+                    indexOrGlobal(cache, breakSource.getTargets(), breakSource, id, registryManager, RegistryKeys.BLOCK);
 
             case BlockInteractionExpSource interactSource ->
-                indexOrGlobal(cache, interactSource.getTargets(), interactSource, id, registryManager, RegistryKeys.BLOCK);
+                    indexOrGlobal(cache, interactSource.getTargets(), interactSource, id, registryManager, RegistryKeys.BLOCK);
 
+            case BlockBrushExpSource brushSource ->
+                    indexOrGlobal(cache, brushSource.getTargets(), brushSource, id, registryManager, RegistryKeys.BLOCK);
 
             case ConsumeFoodExpSource consumeFood ->
                     indexOrGlobal(cache, consumeFood.getItems(), consumeFood, id, registryManager, RegistryKeys.ITEM);

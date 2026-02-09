@@ -1,0 +1,91 @@
+package dev.elrol.osmc.data.exp;
+
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.elrol.osmc.data.ExpSource;
+import dev.elrol.osmc.data.ExpSourceType;
+import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.registries.OSMCExpSourceTypeRegistry;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.Identifier;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class BlockBrushExpSource extends ExpSource {
+
+    public static final MapCodec<BlockBrushExpSource> CODEC = RecordCodecBuilder.mapCodec(instance -> ExpSource.getCommonCodec(instance)
+            .and(OSMCConstants.TARGET_BLOCK_CODEC.listOf().fieldOf("targets").forGetter(BlockBrushExpSource::getTargets))
+            .and(Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("requiredProperties").forGetter(BlockBrushExpSource::getRequiredProperties)
+    ).apply(instance, (expGain, targets, requiredProperties) -> {
+        BlockBrushExpSource data = new BlockBrushExpSource(expGain);
+        data.targets.addAll(targets);
+        data.requiredProperties.putAll(requiredProperties);
+        return data;
+    }));
+
+    private final List<Either<RegistryKey<Block>, TagKey<Block>>> targets = new ArrayList<>();
+    private final Map<String, String> requiredProperties = new HashMap<>();
+
+    public BlockBrushExpSource(int expGain) {
+        super(expGain);
+    }
+
+    public List<Either<RegistryKey<Block>, TagKey<Block>>> getTargets() { return targets; }
+    public Map<String, String> getRequiredProperties() { return requiredProperties; }
+
+
+    /**
+     * Adds the target block to this source
+     * @param target the block
+     */
+    public void addTarget(Block target) {
+        Registries.BLOCK.getKey(target).ifPresent(key -> targets.add(Either.left(key)));
+    }
+
+    /**
+     * Adds the target block tag to this source
+     * @param id the block tag
+     */
+    public void addTarget(Identifier id) {
+        targets.add(Either.right(TagKey.of(Registries.BLOCK.getKey(), id)));
+    }
+
+    public void addRequiredProperty(String key, String value) {
+        requiredProperties.put(key, value);
+    }
+
+    public boolean hasProperties(BlockState state) {
+        return requiredProperties.entrySet().stream().allMatch(entry -> {
+            String key = entry.getKey();
+            String expectedValue = entry.getValue();
+
+            return state.getEntries().entrySet().stream().anyMatch(stateEntry ->
+                    stateEntry.getKey().getName().equals(key) && stateEntry.getValue().toString().equals(expectedValue));
+        });
+    }
+
+    @Override
+    public ExpSourceType<?> getType() {
+        return OSMCExpSourceTypeRegistry.BRUSH_EXP_SOURCE;
+    }
+
+    @Override
+    public MapCodec<? extends ExpSource> getCodec() {
+        return CODEC;
+    }
+
+    @Override
+    public List<SkillTrigger> getTriggers() {
+        return List.of(SkillTrigger.BLOCK_BRUSH);
+    }
+}

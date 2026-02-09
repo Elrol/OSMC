@@ -6,9 +6,12 @@
   "mixins": [
     "BrewingStandBlockEntityMixin",
     "BrewingStandScreenHandlerMixin",
+    "BrushableBlockEntityMixin",
     "EnchantmentScreenHandlerMixin",
     "ItemStackMixin",
     "LivingEntityMixin",
+    "LootContextMixin",
+    "LootTableMixin",
     "MerchantEntityMixin",
     "PotionItemMixin",
     "ScreenHandlerMixin"

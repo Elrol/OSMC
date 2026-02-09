@@ -14,6 +14,7 @@ import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import dev.elrol.osmc.registries.OSMCSkillRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
+import net.minecraft.component.ComponentType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageType;
@@ -23,7 +24,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -57,33 +57,34 @@ public class OSMCConstants {
     public static final File PLAYER_DATA_DIR = new File(OSMC_DATA_DIR, "player_data");
 
     // Exp Source Type IDs
-    public static final String BLOCK_BREAK_EXP_ID =                 "block_break";
-    public static final String BLOCK_INTERACT_EXP_ID =              "block_interact";
-    public static final String CONSUME_FOOD_EXP_ID =                "consume_food";
-    public static final String CONSUME_POTION_EXP_ID =              "consume_potion";
-    public static final String CRAFT_EXP_ID =                       "craft";
-    public static final String ENCHANT_EXP_ID =                     "enchant";
-    public static final String ENTITY_INTERACTION_EXP_ID =          "entity_interact";
-    public static final String ENTITY_KILL_EXP_ID =                 "entity_kill";
-    public static final String ITEM_USE_EXP_ID =                    "item_use";
-    public static final String POTION_BREW_EXP_ID =                 "potion_brew";
-    public static final String VILLAGER_TRADE_EXP_ID =              "villager_trade";
+    public static final String BLOCK_BREAK_EXP_ID               = "block_break";
+    public static final String BLOCK_INTERACT_EXP_ID            = "block_interact";
+    public static final String BLOCK_BRUSH_EXP_ID               = "block_brush";
+    public static final String CONSUME_FOOD_EXP_ID              = "consume_food";
+    public static final String CONSUME_POTION_EXP_ID            = "consume_potion";
+    public static final String CRAFT_EXP_ID                     = "craft";
+    public static final String ENCHANT_EXP_ID                   = "enchant";
+    public static final String ENTITY_INTERACTION_EXP_ID        = "entity_interact";
+    public static final String ENTITY_KILL_EXP_ID               = "entity_kill";
+    public static final String ITEM_USE_EXP_ID                  = "item_use";
+    public static final String POTION_BREW_EXP_ID               = "potion_brew";
+    public static final String VILLAGER_TRADE_EXP_ID            = "villager_trade";
 
-    public static final String COBBLEMON_CAPTURE_EXP_ID =           "cobblemon_capture";
-    public static final String COBBLEMON_NPC_BATTLE_EXP_ID =        "cobblemon_npc_battle";
-    public static final String COBBLEMON_PLAYER_BATTLE_EXP_ID =     "cobblemon_player_battle";
-    public static final String COBBLEMON_WILD_BATTLE_EXP_ID =       "cobblemon_wild_battle";
-    public static final String COBBLEMON_EVOLUTION_EXP_ID =         "cobblemon_evolution";
-    public static final String COBBLEMON_EGG_HATCH_EXP_ID =         "cobblemon_egg_hatch";
-    public static final String COBBLEMON_LEVEL_UP_EXP_ID =          "cobblemon_level_up";
-    public static final String COBBLEMON_FOSSIL_REVIVE_EXP_ID =     "cobblemon_fossil_revive";
+    public static final String COBBLEMON_CAPTURE_EXP_ID         = "cobblemon_capture";
+    public static final String COBBLEMON_NPC_BATTLE_EXP_ID      = "cobblemon_npc_battle";
+    public static final String COBBLEMON_PLAYER_BATTLE_EXP_ID   = "cobblemon_player_battle";
+    public static final String COBBLEMON_WILD_BATTLE_EXP_ID     = "cobblemon_wild_battle";
+    public static final String COBBLEMON_EVOLUTION_EXP_ID       = "cobblemon_evolution";
+    public static final String COBBLEMON_EGG_HATCH_EXP_ID       = "cobblemon_egg_hatch";
+    public static final String COBBLEMON_LEVEL_UP_EXP_ID        = "cobblemon_level_up";
+    public static final String COBBLEMON_FOSSIL_REVIVE_EXP_ID   = "cobblemon_fossil_revive";
 
     // Skill Effect Type IDs
-    public static final String BLOCK_DROP_MULTIPLIER_EFFECT_ID =    "block_drop_multiplier";
-    public static final String DAMAGE_MITIGATION_EFFECT_ID =        "damage_mitigation";
-    public static final String MOB_DROP_MULTIPLIER_EFFECT_ID =      "mob_drop_multiplier";
-    public static final String STAT_MODIFIER_EFFECT_ID =            "stat_modifier";
-
+    public static final String BLOCK_DROP_MULTIPLIER_EFFECT_ID  = "block_drop_multiplier";
+    public static final String DAMAGE_MITIGATION_EFFECT_ID      = "damage_mitigation";
+    public static final String LOOT_ROLL_EFFECT_ID              = "loot_roll";
+    public static final String MOB_DROP_MULTIPLIER_EFFECT_ID    = "mob_drop_multiplier";
+    public static final String STAT_MODIFIER_EFFECT_ID          = "stat_modifier";
 
     // Codecs
     public static final Codec<Either<RegistryKey<Item>, TagKey<Item>>>                          TARGET_ITEM_CODEC           = Codec.either(RegistryKey.createCodec(RegistryKeys.ITEM), TagKey.codec(RegistryKeys.ITEM));

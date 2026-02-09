@@ -116,13 +116,15 @@ public class MathUtils {
 
         int max = stack.getItem().getMaxCount();
 
+        ItemStack newStack = stack.copy();
+
         while(count > max) {
-            world.spawnEntity(new ItemEntity(world, origin.getX(), origin.getY(), origin.getZ(), stack.copyWithCount(max)));
+            world.spawnEntity(new ItemEntity(world, origin.getX(), origin.getY(), origin.getZ(), newStack.copyWithCount(max)));
             count -= max;
         }
 
         if(count > 0)
-            world.spawnEntity(new ItemEntity(world, origin.getX(), origin.getY(), origin.getZ(), stack.copyWithCount(count)));
+            world.spawnEntity(new ItemEntity(world, origin.getX(), origin.getY(), origin.getZ(), newStack.copyWithCount(count)));
         return finalCount;
     }
 }

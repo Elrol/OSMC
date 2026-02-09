@@ -8,6 +8,7 @@ import dev.elrol.osmc.data.SkillTrigger;
 import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
 import dev.elrol.osmc.data.effects.MobDropMultiplierSkillEffect;
 import dev.elrol.osmc.libs.MathUtils;
+import dev.elrol.osmc.registries.OSMCLootFunctionRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import dev.elrol.osmc.registries.OSMCSkillEffectRegistry;
 import net.minecraft.item.ItemStack;
@@ -32,7 +33,7 @@ public class MobDropLootFunction extends ConditionalLootFunction {
 
     @Override
     public LootFunctionType<? extends ConditionalLootFunction> getType() {
-        return null;
+        return OSMCLootFunctionRegistry.MOB_DROP_MULTIPLIER_FUNCTION_TYPE;
     }
 
     @Override

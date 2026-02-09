@@ -7,10 +7,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
-import dev.elrol.osmc.data.effects.DamageMitigationSkillEffect;
-import dev.elrol.osmc.data.effects.MobDropMultiplierSkillEffect;
-import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
+import dev.elrol.osmc.data.effects.*;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.libs.JsonUtils;
@@ -22,6 +19,7 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
@@ -105,6 +103,9 @@ public class OSMCSkillRegistry {
         bbSource.addTarget(Identifier.ofVanilla("logs"));
         bbSource.addRequiredProperty("axis", "y");
         skill.addExpSource(bbSource);
+
+        // Block Brush Exp Source
+        skill.addExpSource(new BlockBrushExpSource(1));
 
         // Block Interact Exp Source
         BlockInteractionExpSource biSource = new BlockInteractionExpSource(1);
@@ -202,6 +203,10 @@ public class OSMCSkillRegistry {
         skill.addSkillEffect(dmEffect);
 
         skill.addSkillEffect(new StatModifierSkillEffect(1, "level * 2", "level", Identifier.ofVanilla("generic.step_height"), EntityAttributeModifier.Operation.ADD_VALUE));
+
+        LootRollSkillEffect lrEffect = new LootRollSkillEffect(1, "level * 3", "level * 5");
+        lrEffect.addTable(LootTables.WHITE_SHEEP_ENTITY.getValue());
+        skill.addSkillEffect(lrEffect);
 
         register(skill);
         save(skill, server);

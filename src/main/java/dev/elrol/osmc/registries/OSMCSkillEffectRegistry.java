@@ -3,10 +3,8 @@ package dev.elrol.osmc.registries;
 import com.mojang.datafixers.util.Either;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.*;
-import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
-import dev.elrol.osmc.data.effects.DamageMitigationSkillEffect;
-import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import dev.elrol.osmc.data.effects.*;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -30,6 +28,8 @@ public class OSMCSkillEffectRegistry {
     public static List<BoundEffect<?>> getEffects(SkillTrigger trigger, Object target) {
         Map<Object, List<BoundEffect<?>>> cache = TRIGGER_CACHE.get(trigger);
         if(cache == null) return new ArrayList<>();
+        if(target == null) return cache.getOrDefault("GLOBAL", List.of());
+
         List<BoundEffect<?>> effects = new ArrayList<>(cache.getOrDefault(target, List.of()));
         effects.addAll(cache.getOrDefault("GLOBAL", List.of()));
 
@@ -49,11 +49,15 @@ public class OSMCSkillEffectRegistry {
     }
 
     private static <T extends SkillEffect> void indexEffect(SkillTrigger trigger, T effect, Identifier id, RegistryWrapper.WrapperLookup registryManager) {
-        Map<Object, List<BoundEffect<?>>> cache = TRIGGER_CACHE.computeIfAbsent(trigger, a -> new Reference2ObjectOpenHashMap<>());
+        Map<Object, List<BoundEffect<?>>> cache = TRIGGER_CACHE.computeIfAbsent(trigger, a -> new Object2ObjectOpenHashMap<>());
 
         switch(effect) {
             case BlockDropMultiplierSkillEffect blockDropMultEffect ->
-                indexOrGlobal(cache, blockDropMultEffect.getTargets(), blockDropMultEffect, id, registryManager, RegistryKeys.ITEM);
+                    indexOrGlobal(cache, blockDropMultEffect.getTargets(), blockDropMultEffect, id, registryManager, RegistryKeys.ITEM);
+            case MobDropMultiplierSkillEffect mobDropMultEffect ->
+                    indexOrGlobal(cache, mobDropMultEffect.getTargets(), mobDropMultEffect, id, registryManager, RegistryKeys.ITEM);
+            case LootRollSkillEffect lootRollEffect ->
+                    indexOrGlobal(cache, lootRollEffect.getLootTables(), lootRollEffect, id);
             case DamageMitigationSkillEffect damageMitigationEffect ->
                     indexOrGlobal(cache, damageMitigationEffect.getDamageTypes(), damageMitigationEffect, id, registryManager, RegistryKeys.DAMAGE_TYPE);
             case StatModifierSkillEffect statModifierEffect ->
@@ -70,6 +74,14 @@ public class OSMCSkillEffectRegistry {
 
     private static void addBoundEffect(Map<Object, List<BoundEffect<?>>> cache, SkillEffect effect, Identifier id) {
         addBoundEffect(cache, "GLOBAL", effect, id);
+    }
+
+    private static <S, T extends SkillEffect> void indexOrGlobal(Map<Object, List<BoundEffect<?>>> cache, List<S> keys, T effect, Identifier id) {
+        if(keys.isEmpty()) {
+            addBoundEffect(cache, effect, id);
+        } else {
+            keys.forEach(key -> addBoundEffect(cache, key, effect, id));
+        }
     }
 
     private static <S, T extends SkillEffect> void indexOrGlobal(Map<Object, List<BoundEffect<?>>> cache, List<Either<RegistryKey<S>, TagKey<S>>> targets, T effect, Identifier id, RegistryWrapper.WrapperLookup registryManager, RegistryKey<Registry<S>> registryKey) {
