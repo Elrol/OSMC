@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.battles.model.actor.BattleActor;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor;
 import com.cobblemon.mod.common.battles.actor.PokemonBattleActor;
+import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.*;
@@ -14,6 +15,7 @@ import dev.elrol.osmc.data.functions.BlockDropLootFunction;
 import dev.elrol.osmc.data.functions.MobDropLootFunction;
 import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.libs.MathUtils;
+import dev.elrol.osmc.libs.SkillUtils;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
@@ -31,23 +33,39 @@ import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.HitResult;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class OSMCEventRegistry {
 
     private static int ticksSinceSave = 0;
     private static int ticksSinceBufferPayout = 0;
+    private static final Random random = new Random();
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
+
+        CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe(event -> {
+            if(!OSMC.CONFIG.getCobblemonTiers().getEnabled()) return;
+
+            PokemonEntity pokemon = event.getEntity();
+            if(pokemon.getWorld() instanceof ServerWorld world) {
+                if(world.getClosestPlayer(pokemon, 64.0) instanceof ServerPlayerEntity player) {
+                    CobblemonTier tier = SkillUtils.getPlayerTier(player);
+                    if(tier == null) return;
+
+                    int newLevel = random.nextInt(tier.getMinSpawnedLevel(), tier.getMaxSpawnedLevel() + 1);
+                    Pokemon pokeData = pokemon.getPokemon();
+                    pokeData.setLevel(newLevel);
+                    pokeData.heal();
+                }
+            }
+        });
 
         BlockBrushEvent.EVENT.register((player, state) -> {
             Registries.BLOCK.getKey(state.getBlock()).ifPresent(key -> {

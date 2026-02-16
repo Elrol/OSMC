@@ -10,6 +10,7 @@ import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,7 +30,8 @@ public class PlayerSkillData {
     }));
 
     private final UUID uuid;
-    private final Map<Identifier, Long> SKILL_EXP = new HashMap<>();
+    private final Map<Identifier, Long> SKILL_EXP = new LinkedHashMap<>();
+    private final Map<Identifier, Integer> SKILL_LEVEL_CACHE = new LinkedHashMap<>();
     private Text username = Text.empty();
 
     public PlayerSkillData(UUID uuid) {
@@ -41,6 +43,7 @@ public class PlayerSkillData {
 
     public void setSkillExp(Identifier skillID, long newExp) {
         SKILL_EXP.put(skillID, newExp);
+        SKILL_LEVEL_CACHE.remove(skillID);
     }
 
     public void addSkillExp(Identifier skillID, long expGained) {
@@ -48,6 +51,7 @@ public class PlayerSkillData {
         long newExp = oldExp + expGained;
 
         SKILL_EXP.put(skillID, newExp);
+        SKILL_LEVEL_CACHE.remove(skillID);
     }
 
     public long getTargetXP(Identifier skillID) {
@@ -57,6 +61,8 @@ public class PlayerSkillData {
     }
 
     public int getSkillLevel(Identifier skillID) {
+        if(SKILL_LEVEL_CACHE.containsKey(skillID)) return SKILL_LEVEL_CACHE.get(skillID);
+
         Skill skill = OSMCSkillRegistry.get(skillID);
         int level = 1;
         long xp = getSkillXp(skillID);
@@ -68,6 +74,7 @@ public class PlayerSkillData {
             }
             level++;
         }
+        SKILL_LEVEL_CACHE.put(skillID, level);
         return level;
     }
 
@@ -86,6 +93,10 @@ public class PlayerSkillData {
     public Map<Identifier, Long> getSkillExpMap() { return SKILL_EXP; }
     public UUID getUuid() { return uuid; }
     public String getUuidString() { return uuid.toString(); }
+
+    public void rebuildLevelCache() {
+        SKILL_EXP.keySet().forEach(this::getSkillLevel);
+    }
 
     public record SkillExpInfo(int level, long currentExp, long targetExp) {}
 }

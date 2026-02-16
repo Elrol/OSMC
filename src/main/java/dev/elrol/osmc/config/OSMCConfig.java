@@ -8,12 +8,20 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.OSMC;
+import dev.elrol.osmc.data.PlayerSkillData;
+import dev.elrol.osmc.data.CobblemonTier;
 import dev.elrol.osmc.libs.JsonUtils;
+import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class OSMCConfig {
     private static final String FILENAME = "config.json";
@@ -25,8 +33,10 @@ public class OSMCConfig {
             Codec.INT.fieldOf("autosave").forGetter(OSMCConfig::getAutoSave),
             Codec.INT.fieldOf("expPayout").forGetter(OSMCConfig::getExpPayout),
             Codec.INT.fieldOf("leaderboardCount").forGetter(OSMCConfig::getLeaderboardCount),
-            DamageMitigationConfig.CODEC.fieldOf("damageMitigation").forGetter(OSMCConfig::getDamageMitigation)
-    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, damageMitigation) -> {
+            DamageMitigationConfig.CODEC.fieldOf("damageMitigation").forGetter(OSMCConfig::getDamageMitigation),
+            TrainerLevelConfig.CODEC.fieldOf("trainerLevel").forGetter(OSMCConfig::getTrainerLevel),
+            CobblemonTiers.CODEC.fieldOf("cobblemonTiers").forGetter(OSMCConfig::getCobblemonTiers)
+    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, damageMitigation, trainerLevel, cobblemonTiers) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
@@ -38,6 +48,8 @@ public class OSMCConfig {
         data.leaderboardCount = leaderboardCount;
 
         data.damageMitigation = damageMitigation;
+        data.trainerLevel = trainerLevel;
+        data.cobblemonTiers = cobblemonTiers;
 
         return data;
     }));
@@ -51,6 +63,8 @@ public class OSMCConfig {
     private int leaderboardCount = 5;
 
     private DamageMitigationConfig damageMitigation = new DamageMitigationConfig();
+    private TrainerLevelConfig trainerLevel = new TrainerLevelConfig();
+    private CobblemonTiers cobblemonTiers = new CobblemonTiers();
 
     public boolean getDebug() { return isDebug; }
 
@@ -66,7 +80,14 @@ public class OSMCConfig {
 
     public DamageMitigationConfig getDamageMitigation() { return damageMitigation; }
 
+    public TrainerLevelConfig getTrainerLevel() { return trainerLevel; }
+
+    public CobblemonTiers getCobblemonTiers() { return cobblemonTiers; }
     public void save() {
+
+        trainerLevel.check();
+        cobblemonTiers.check();
+
         DataResult<JsonElement> jsonResult = CODEC.encodeStart(JsonOps.INSTANCE, this);
         jsonResult.ifError(err -> OSMC.LOGGER.error(err.message()))
                 .ifSuccess(json -> JsonUtils.saveToJson(OSMCConstants.CONFIG_DIR, FILENAME, json));
@@ -103,5 +124,91 @@ public class OSMCConfig {
         }
 
         public Map<Identifier, Float> getSourceLimits() { return sourceLimits; }
+    }
+
+    public static class TrainerLevelConfig {
+
+        public static final Codec<TrainerLevelConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Identifier.CODEC.listOf().fieldOf("subskills").forGetter(TrainerLevelConfig::getSubskills),
+                Codec.STRING.fieldOf("formula").forGetter(TrainerLevelConfig::getFormula)
+        ).apply(instance, (subskills, formula) -> {
+            TrainerLevelConfig data = new TrainerLevelConfig();
+            data.formula = formula;
+            data.subskills.addAll(subskills);
+            return data;
+        }));
+
+        private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(.+?)\\}");
+        private final List<Identifier> subskills = new ArrayList<>();
+        private String formula = "{osmc:example_skill} + (total / skills)";
+
+        public int calculate(UUID uuid) {
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(uuid);
+
+            double totalLevels = 0;
+            Map<String, Double> skillValues = new HashMap<>();
+
+            for(Identifier id : subskills) {
+                double level = data.getSkillLevel(id);
+                skillValues.put(id.toString(), level);
+                totalLevels += level;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            Matcher matcher = VARIABLE_PATTERN.matcher(formula);
+
+            while (matcher.find()) {
+                String key = matcher.group(1);
+                double val = skillValues.getOrDefault(key, 0.0d);
+                matcher.appendReplacement(sb, String.valueOf(val));
+            }
+            matcher.appendTail(sb);
+
+            Map<String, Double> globals = new HashMap<>();
+            globals.put("skills", (double) subskills.size());
+            globals.put("total", totalLevels);
+            return (int) MathUtils.calculate(sb.toString(), globals);
+        }
+
+        public String getFormula() { return formula; }
+
+        public List<Identifier> getSubskills() { return subskills; }
+        public void check() {
+            if(subskills.isEmpty()) {
+                subskills.add(OSMCConstants.osmcID("example_skill"));
+            }
+        }
+    }
+
+    public static class CobblemonTiers {
+
+        public static final Codec<CobblemonTiers> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.BOOL.fieldOf("enabled").forGetter(CobblemonTiers::getEnabled),
+                CobblemonTier.CODEC.listOf().fieldOf("tiers").forGetter(CobblemonTiers::getTiers)
+        ).apply(instance, (enabled, tiers) -> {
+            CobblemonTiers data = new CobblemonTiers();
+
+            data.enabled = enabled;
+            data.tiers.addAll(tiers);
+
+            return data;
+        }));
+
+        boolean enabled = false;
+        List<CobblemonTier> tiers = new ArrayList<>();
+
+        public boolean getEnabled() { return enabled; }
+
+        public List<CobblemonTier> getTiers() { return tiers; }
+        public void check() {
+            if(tiers.isEmpty()) {
+                CobblemonTier tier = new CobblemonTier();
+                tier.setName(Text.literal("1").formatted(Formatting.GREEN));
+                tier.setReqLevel(1);
+                tier.setMinSpawnedLevel(5);
+                tier.setMaxSpawnedLevel(15);
+                tiers.add(tier);
+            }
+        }
     }
 }

@@ -11,6 +11,7 @@ import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.libs.MathUtils;
+import dev.elrol.osmc.libs.SkillUtils;
 import dev.elrol.osmc.registries.*;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
@@ -20,10 +21,12 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +36,7 @@ public class OSMCCommand extends BaseCommand {
     @Override
     public void init(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess access, CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(literal("osmc")
+                .executes(OSMCCommand::osmcInfo)
                 .then(literal("reload")
                         .requires(source -> {
                             //TODO change this to only allow ops / luckperms
@@ -76,6 +80,39 @@ public class OSMCCommand extends BaseCommand {
 
     private static CompletableFuture<Suggestions> SkillSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         return CommandSource.suggestIdentifiers(OSMCSkillRegistry.getAll().keySet(), builder);
+    }
+
+    private static int osmcInfo(CommandContext<ServerCommandSource> context) {
+        List<MutableText> texts = new ArrayList<>();
+
+        if(context.getSource().getPlayer() instanceof ServerPlayerEntity player) {
+            int level = SkillUtils.getPlayerTrainerLevel(player);
+            int totalLevel = SkillUtils.getTotalSkillLevel(player);
+            List<Identifier> subskills = OSMC.CONFIG.getTrainerLevel().getSubskills();
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+
+            texts.add(Text.empty()
+                    .append(player.getDisplayName())
+                    .append(Text.literal("'s Levels:"))
+                    .formatted(Formatting.BOLD));
+
+            texts.add(Text.empty()
+                    .append(Text.literal("   Trainer Level").formatted(Formatting.GRAY))
+                    .append(" : " + level));
+
+            subskills.stream().sorted().forEach(id -> {
+                Skill skill = OSMCSkillRegistry.get(id);
+                if(skill == null) return;
+                texts.add(Text.literal("      - ").append(skill.getTextName()).append(Text.literal(" : " + data.getSkillLevel(id))));
+            });
+
+            texts.add(Text.empty()
+                    .append(Text.literal("   Total Skill Levels").formatted(Formatting.GRAY))
+                    .append(" : " + totalLevel));
+        }
+
+        packageTexts(context.getSource(), texts);
+        return 1;
     }
 
     private static int setPlayerSkillLevel(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -233,29 +270,31 @@ public class OSMCCommand extends BaseCommand {
     }
 
     private static void displayOneSkill(ServerCommandSource source, ServerPlayerEntity target, Identifier id) {
-        sendSkillHeader(source, target);
+        List<MutableText> texts = getSkillHeader(target);
         PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
-        displaySkill(source, data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id)));
+        texts.add(getSkill(data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id))));
+        packageTexts(source, texts);
     }
 
     private static void displayAllSkills(ServerCommandSource source, ServerPlayerEntity target) {
-        sendSkillHeader(source, target);
+        List<MutableText> texts = getSkillHeader(target);
         PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
-        data.getSkillExpMap().keySet().forEach(id -> displaySkill(source, data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id))));
+        data.getSkillExpMap().keySet().forEach(id -> texts.add(getSkill(data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id)))));
+        packageTexts(source, texts);
     }
 
-    private static void sendSkillHeader(ServerCommandSource source, ServerPlayerEntity target) {
-        source.sendMessage(Text.empty().append(target.getDisplayName()).append(Text.literal("'s Stats:").formatted(Formatting.BOLD, Formatting.UNDERLINE)));
+    private static List<MutableText> getSkillHeader(ServerPlayerEntity target) {
+        return new ArrayList<>(List.of(Text.empty().append(target.getDisplayName()).append(Text.literal("'s Stats:")).formatted(Formatting.BOLD)));
     }
 
-    private static void displaySkill(ServerCommandSource source, PlayerSkillData.SkillExpInfo info, Skill skill) {
-        source.sendMessage(Text.empty()
+    private static MutableText getSkill(PlayerSkillData.SkillExpInfo info, Skill skill) {
+        return Text.literal("   ")
                 .append(skill.getTextName())
-                .append(Text.literal(" " + info.level() + " [ "))
+                .append(Text.literal(" : " + info.level() + " [ "))
                 .append(Text.literal(String.valueOf(info.currentExp())).formatted(Formatting.YELLOW))
                 .append(Text.literal(" / "))
                 .append(Text.literal(String.valueOf(info.targetExp())).formatted(Formatting.GREEN))
-                .append(Text.literal(" ]")));
+                .append(Text.literal(" ]"));
     }
 
     private static int displayLeaderboard(CommandContext<ServerCommandSource> context) {
@@ -263,34 +302,50 @@ public class OSMCCommand extends BaseCommand {
         List<OSMCLeaderboard.Entry> entries = OSMCLeaderboard.get(id);
 
         ServerCommandSource source = context.getSource();
-        sendLeaderboardHeader(source, id);
+        List<MutableText> texts = getLeaderboardHeader(id);
+
         int rank = 1;
         for (OSMCLeaderboard.Entry entry : entries) {
-            displayEntry(source, id, entry, rank);
+            texts.add(getEntry(id, entry, rank));
             rank++;
         }
+        packageTexts(source, texts);
         return 1;
     }
 
-    private static void sendLeaderboardHeader(ServerCommandSource source, Identifier skillID) {
+    private static List<MutableText> getLeaderboardHeader(Identifier skillID) {
+        List<MutableText> texts = new ArrayList<>();
         Skill skill = OSMCSkillRegistry.get(skillID);
         if(skill == null) {
-            source.sendMessage(Text.literal("Skill not found").formatted(Formatting.RED));
-            return;
+            texts.add(Text.literal("Skill not found").formatted(Formatting.RED));
+            return texts;
         }
-        source.sendMessage(Text.empty()
+        texts.add(Text.empty()
                 .append(skill.getTextName())
                 .append(" Leaderboard:"));
+        return texts;
     }
 
-    private static void displayEntry(ServerCommandSource source, Identifier skillID, OSMCLeaderboard.Entry entry, int rank) {
+    private static MutableText getEntry(Identifier skillID, OSMCLeaderboard.Entry entry, int rank) {
         Formatting color = Formatting.GRAY;
         PlayerSkillData data = OSMCPlayerDataRegistry.get(entry.uuid());
-        source.sendMessage(Text.literal(" ").append(Text.literal(rank > 9 ? "│" + rank + "│ " : "│ " + rank + "│ ").formatted(color))
+        return Text.literal(" ").append(Text.literal(rank > 9 ? "│" + rank + "│ " : "│ " + rank + "│ ").formatted(color))
                 .append(data.getUsername())
                 .styled(s -> s.withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
                         Text.literal("Level " + data.getSkillLevel(skillID) + " │ " + entry.exp() + " exp").formatted(color)))
-                ));
+                );
+    }
+
+    private static void packageTexts(ServerCommandSource source, List<MutableText> texts) {
+        if(texts.isEmpty()) return;
+
+        MutableText output = texts.stream()
+                .reduce((first, second) -> first.append("\n").append(second))
+                .orElse(Text.empty());
+
+        if(!output.equals(Text.empty())) {
+            source.sendMessage(output);
+        }
     }
 }
