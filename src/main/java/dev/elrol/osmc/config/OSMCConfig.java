@@ -86,7 +86,6 @@ public class OSMCConfig {
     public void save() {
 
         trainerLevel.check();
-        cobblemonTiers.check();
 
         DataResult<JsonElement> jsonResult = CODEC.encodeStart(JsonOps.INSTANCE, this);
         jsonResult.ifError(err -> OSMC.LOGGER.error(err.message()))
@@ -183,32 +182,17 @@ public class OSMCConfig {
     public static class CobblemonTiers {
 
         public static final Codec<CobblemonTiers> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Codec.BOOL.fieldOf("enabled").forGetter(CobblemonTiers::getEnabled),
-                CobblemonTier.CODEC.listOf().fieldOf("tiers").forGetter(CobblemonTiers::getTiers)
-        ).apply(instance, (enabled, tiers) -> {
+                Codec.BOOL.fieldOf("enabled").forGetter(CobblemonTiers::getEnabled)
+        ).apply(instance, (enabled) -> {
             CobblemonTiers data = new CobblemonTiers();
 
             data.enabled = enabled;
-            data.tiers.addAll(tiers);
 
             return data;
         }));
 
         boolean enabled = false;
-        List<CobblemonTier> tiers = new ArrayList<>();
 
         public boolean getEnabled() { return enabled; }
-
-        public List<CobblemonTier> getTiers() { return tiers; }
-        public void check() {
-            if(tiers.isEmpty()) {
-                CobblemonTier tier = new CobblemonTier();
-                tier.setName(Text.literal("1").formatted(Formatting.GREEN));
-                tier.setReqLevel(1);
-                tier.setMinSpawnedLevel(5);
-                tier.setMaxSpawnedLevel(15);
-                tiers.add(tier);
-            }
-        }
     }
 }

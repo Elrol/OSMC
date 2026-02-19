@@ -259,6 +259,7 @@ public class OSMCCommand extends BaseCommand {
         OSMCSkillRegistry.load(context.getSource().getServer());
         OSMCExpSourceRegistry.rebuild(OSMCSkillRegistry.getAll(), context.getSource().getRegistryManager());
         OSMCSkillEffectRegistry.rebuild(OSMCSkillRegistry.getAll(), context.getSource().getRegistryManager());
+        OSMCCobblemonTierRegistry.init();
 
         MathUtils.load();
 

@@ -16,6 +16,7 @@ import dev.elrol.osmc.data.functions.MobDropLootFunction;
 import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.SkillUtils;
+import kotlin.Unit;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
@@ -52,17 +53,19 @@ public class OSMCEventRegistry {
 
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe(event -> {
             if(!OSMC.CONFIG.getCobblemonTiers().getEnabled()) return;
-
             PokemonEntity pokemon = event.getEntity();
             if(pokemon.getWorld() instanceof ServerWorld world) {
                 if(world.getClosestPlayer(pokemon, 64.0) instanceof ServerPlayerEntity player) {
                     CobblemonTier tier = SkillUtils.getPlayerTier(player);
                     if(tier == null) return;
 
-                    int newLevel = random.nextInt(tier.getMinSpawnedLevel(), tier.getMaxSpawnedLevel() + 1);
                     Pokemon pokeData = pokemon.getPokemon();
-                    pokeData.setLevel(newLevel);
-                    pokeData.heal();
+                    if(tier.isValid(pokeData)) {
+                        pokeData.setLevel(random.nextInt(tier.getMinSpawnedLevel(), tier.getMaxSpawnedLevel() + 1));
+                        pokeData.heal();
+                    } else {
+                        pokemon.discard();
+                    }
                 }
             }
         });

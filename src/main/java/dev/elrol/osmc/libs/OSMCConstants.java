@@ -52,6 +52,7 @@ public class OSMCConstants {
     public static final File ROOT_DIR = FabricLoader.getInstance().getGameDir().toFile();
     public static final File CONFIG_DIR = new File(FabricLoader.getInstance().getConfigDir().toFile(), "OSMC");
     public static final File SKILL_CONFIG_DIR = new File(CONFIG_DIR, "Skills");
+    public static final File TIER_CONFIG_DIR = new File(CONFIG_DIR, "Tiers");
 
     public static final File OSMC_DATA_DIR = new File(ROOT_DIR, "OSMC");
     public static final File PLAYER_DATA_DIR = new File(OSMC_DATA_DIR, "player_data");

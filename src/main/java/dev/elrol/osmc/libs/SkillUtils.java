@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Either;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.CobblemonTier;
 import dev.elrol.osmc.data.PlayerSkillData;
+import dev.elrol.osmc.registries.OSMCCobblemonTierRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
@@ -35,7 +36,7 @@ public class SkillUtils {
         CobblemonTier tier = null;
         int level = getPlayerTrainerLevel(uuid);
 
-        List<CobblemonTier> tiers = OSMC.CONFIG.getCobblemonTiers().getTiers();
+        List<CobblemonTier> tiers = OSMCCobblemonTierRegistry.get();
         for (CobblemonTier cobblemonTier : tiers) {
             if(cobblemonTier.getReqLevel() <= level) tier = cobblemonTier;
             else break;
