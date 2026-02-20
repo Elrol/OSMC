@@ -12,6 +12,7 @@ val fabricLoaderVersion: String by project
 val yarnMappings: String by project
 val osmcVersion: String by project
 val cobblemonVersion: String by project
+val papiVersion: String by project
 
 base {
     archivesName.set("${project.property("archives_base_name")}-${osmcVersion}")
@@ -55,6 +56,8 @@ dependencies {
     modImplementation("com.cobblemon:fabric:${cobblemonVersion}+${minecraftVersion}")
 
     implementation("net.objecthunter:exp4j:0.4.8")
+    modImplementation("eu.pb4:placeholder-api:${papiVersion}")
+    include("eu.pb4:placeholder-api:${papiVersion}")
 }
 
 tasks.processResources {

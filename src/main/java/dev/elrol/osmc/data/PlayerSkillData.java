@@ -9,7 +9,6 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Identifier;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -65,10 +64,14 @@ public class PlayerSkillData {
 
         Skill skill = OSMCSkillRegistry.get(skillID);
         int level = 1;
-        long xp = getSkillXp(skillID);
+        long xp = getSkillExp(skillID);
+
+        if(skill == null) {
+            OSMC.LOGGER.error("Invalid skill ID " + skillID);
+            return 0;
+        }
 
         while (level < OSMC.CONFIG.getMaxLevel()) {
-            assert skill != null;
             if(xp < MathUtils.getTotalXPForLevel(skillID, skill.getLevelFormula(), level + 1)) {
                 break;
             }
@@ -78,14 +81,14 @@ public class PlayerSkillData {
         return level;
     }
 
-    public long getSkillXp(Identifier skillID) {
+    public long getSkillExp(Identifier skillID) {
         return SKILL_EXP.getOrDefault(skillID, 0L);
     }
 
     public SkillExpInfo getSkillInfo(Identifier skillID) {
         return new SkillExpInfo(
                 getSkillLevel(skillID),
-                getSkillXp(skillID),
+                getSkillExp(skillID),
                 getTargetXP(skillID)
         );
     }

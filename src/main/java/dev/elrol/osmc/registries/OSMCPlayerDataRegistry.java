@@ -49,7 +49,7 @@ public class OSMCPlayerDataRegistry {
                     int oldLevel = data.getSkillLevel(id);
                     data.addSkillExp(id, (long) expGain);
 
-                    long totalExp = data.getSkillXp(id);
+                    long totalExp = data.getSkillExp(id);
                     OSMCLeaderboard.updateEntry(id, uuid, totalExp);
 
                     ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);

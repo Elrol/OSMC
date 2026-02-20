@@ -18,7 +18,7 @@ public class OSMCLeaderboard {
         OSMCSkillRegistry.getAll().forEach((id, skill) -> {
             TreeSet<Entry> skillSet = new TreeSet<>();
             playerDataMap.forEach((uuid, data) -> {
-                long exp = data.getSkillXp(id);
+                long exp = data.getSkillExp(id);
                 if(exp > 0) skillSet.add(new Entry(uuid, exp));
             });
 

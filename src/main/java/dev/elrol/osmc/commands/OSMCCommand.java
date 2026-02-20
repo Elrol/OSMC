@@ -280,7 +280,7 @@ public class OSMCCommand extends BaseCommand {
     private static void displayAllSkills(ServerCommandSource source, ServerPlayerEntity target) {
         List<MutableText> texts = getSkillHeader(target);
         PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
-        data.getSkillExpMap().keySet().forEach(id -> texts.add(getSkill(data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id)))));
+        OSMCSkillRegistry.getAll().keySet().forEach(id -> texts.add(getSkill(data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id)))));
         packageTexts(source, texts);
     }
 

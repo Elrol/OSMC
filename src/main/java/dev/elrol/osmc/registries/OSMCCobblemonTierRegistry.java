@@ -72,7 +72,7 @@ public class OSMCCobblemonTierRegistry {
 
     public static void save() {
         for (int index = 0; index < tiers.size(); index++) {
-            int finalIndex = index;
+            int finalIndex = index + 1;
             CobblemonTier.CODEC.encodeStart(JsonOps.INSTANCE, tiers.get(index))
                     .ifSuccess(json -> JsonUtils.saveToJson(OSMCConstants.TIER_CONFIG_DIR, finalIndex + ".json", json))
                     .ifError(error -> OSMC.LOGGER.error(error.message()));

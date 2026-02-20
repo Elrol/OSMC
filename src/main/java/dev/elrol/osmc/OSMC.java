@@ -20,5 +20,6 @@ public class OSMC implements ModInitializer {
         OSMCLootFunctionRegistry.init();
         OSMCEventRegistry.init();
         OSMCCobblemonTierRegistry.init();
+        OSMCPlaceholderRegistry.init();
     }
 }
