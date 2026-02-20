@@ -44,7 +44,10 @@ public class OSMCSkillRegistry {
     public static void load(MinecraftServer server) {
         SKILL_MAP.clear();
         File[] files = OSMCConstants.SKILL_CONFIG_DIR.listFiles(file -> file.getName().endsWith(".json"));
-        if(files == null) return;
+        if(files == null) {
+            OSMCSkillRegistry.registerExampleSkill(server);
+            return;
+        }
 
         for (File file : files) {
             JsonElement json = JsonUtils.loadFromJson(OSMCConstants.SKILL_CONFIG_DIR, file.getName(), null);
@@ -59,8 +62,7 @@ public class OSMCSkillRegistry {
                 OSMC.LOGGER.error("Skill failed to load from: {}", file);
             }
         }
-
-        if(!(new File(OSMCConstants.SKILL_CONFIG_DIR, "example_skill.json").exists()))
+        if(SKILL_MAP.isEmpty())
             OSMCSkillRegistry.registerExampleSkill(server);
     }
 
