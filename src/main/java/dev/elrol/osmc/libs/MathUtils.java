@@ -110,7 +110,7 @@ public class MathUtils {
         int count = (int) chance;
         float remainder = chance - count;
 
-        if(percentChance(remainder)) count++;
+        if(percentChance(remainder * 100f)) count++;
 
         int finalCount = count;
 
