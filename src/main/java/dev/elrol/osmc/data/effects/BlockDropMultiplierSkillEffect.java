@@ -13,6 +13,7 @@ import dev.elrol.osmc.libs.SkillUtils;
 import dev.elrol.osmc.registries.OSMCSkillEffectTypeRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.tag.TagKey;
@@ -69,8 +70,8 @@ public class BlockDropMultiplierSkillEffect extends SkillEffect {
                 "count", (double) originalCount));
     }
 
-    public boolean isValid(Block block) {
-        return SkillUtils.isValid(block, getBlocks());
+    public boolean isValid(ItemStack item) {
+        return SkillUtils.isValid(item, getTargets());
     }
 
     @Override

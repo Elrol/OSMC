@@ -4,11 +4,13 @@ import dev.elrol.osmc.data.ExpSourceType;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.ExpSource;
 import dev.elrol.osmc.data.exp.cobblemon.*;
+import dev.elrol.osmc.data.exp.quickbattle.QuickBattleExpSource;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.registry.Registry;
 
 public class OSMCExpSourceTypeRegistry {
 
+    // Minecraft Exp Sources
     public static final ExpSourceType<BlockBreakExpSource>              BREAK_EXP_SOURCE =                      register(OSMCConstants.BLOCK_BREAK_EXP_ID,              new ExpSourceType<>(BlockBreakExpSource.CODEC));
     public static final ExpSourceType<BlockInteractionExpSource>        BLOCK_INTERACT_EXP_SOURCE =             register(OSMCConstants.BLOCK_INTERACT_EXP_ID,           new ExpSourceType<>(BlockInteractionExpSource.CODEC));
     public static final ExpSourceType<BlockBrushExpSource>              BRUSH_EXP_SOURCE =                      register(OSMCConstants.BLOCK_BRUSH_EXP_ID,              new ExpSourceType<>(BlockBrushExpSource.CODEC));
@@ -22,6 +24,7 @@ public class OSMCExpSourceTypeRegistry {
     public static final ExpSourceType<PotionBrewExpSource>              POTION_BREW_EXP_SOURCE =                register(OSMCConstants.POTION_BREW_EXP_ID,              new ExpSourceType<>(PotionBrewExpSource.CODEC));
     public static final ExpSourceType<VillagerTradeExpSource>           VILLAGER_TRADE_EXP_SOURCE =             register(OSMCConstants.VILLAGER_TRADE_EXP_ID,           new ExpSourceType<>(VillagerTradeExpSource.CODEC));
 
+    // Cobblemon Exp Sources
     public static final ExpSourceType<CaptureExpSource>                 COBBLEMON_CAPTURE_EXP_SOURCE =          register(OSMCConstants.COBBLEMON_CAPTURE_EXP_ID,        new ExpSourceType<>(CaptureExpSource.CODEC));
     public static final ExpSourceType<NpcBattleExpSource>               COBBLEMON_NPC_BATTLE_EXP_SOURCE =       register(OSMCConstants.COBBLEMON_NPC_BATTLE_EXP_ID,     new ExpSourceType<>(NpcBattleExpSource.CODEC));
     public static final ExpSourceType<PlayerBattleExpSource>            COBBLEMON_PLAYER_BATTLE_EXP_SOURCE =    register(OSMCConstants.COBBLEMON_PLAYER_BATTLE_EXP_ID,  new ExpSourceType<>(PlayerBattleExpSource.CODEC));
@@ -30,6 +33,10 @@ public class OSMCExpSourceTypeRegistry {
     public static final ExpSourceType<EggHatchExpSource>                COBBLEMON_EGG_HATCH_EXP_SOURCE =        register(OSMCConstants.COBBLEMON_EGG_HATCH_EXP_ID,      new ExpSourceType<>(EggHatchExpSource.CODEC));
     public static final ExpSourceType<LevelUpExpSource>                 COBBLEMON_LEVEL_UP_EXP_SOURCE =         register(OSMCConstants.COBBLEMON_LEVEL_UP_EXP_ID,       new ExpSourceType<>(LevelUpExpSource.CODEC));
     public static final ExpSourceType<FossilReviveExpSource>            COBBLEMON_FOSSIL_REVIVE_EXP_SOURCE =    register(OSMCConstants.COBBLEMON_FOSSIL_REVIVE_EXP_ID,  new ExpSourceType<>(FossilReviveExpSource.CODEC));
+    public static final ExpSourceType<BlockHarvestExpSource>            COBBLEMON_HARVEST_EXP_SOURCE =          register(OSMCConstants.COBBLEMON_HARVEST_EXP_ID,        new ExpSourceType<>(BlockHarvestExpSource.CODEC));
+
+    // Quick Battle Exp Sources
+    public static final ExpSourceType<QuickBattleExpSource>             COBBLEMON_QUICK_BATTLE_EXP_SOURCE =      register(OSMCConstants.COBBLEMON_QUICK_BATTLE_EXP_ID,  new ExpSourceType<>(QuickBattleExpSource.CODEC));
 
     //public static final ExpSourceType<ExpSource> _EXP_SOURCE = register(OSMCConstants., new ExpSourceType<>());
 

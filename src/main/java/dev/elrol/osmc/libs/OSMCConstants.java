@@ -79,9 +79,13 @@ public class OSMCConstants {
     public static final String COBBLEMON_EGG_HATCH_EXP_ID       = "cobblemon_egg_hatch";
     public static final String COBBLEMON_LEVEL_UP_EXP_ID        = "cobblemon_level_up";
     public static final String COBBLEMON_FOSSIL_REVIVE_EXP_ID   = "cobblemon_fossil_revive";
+    public static final String COBBLEMON_HARVEST_EXP_ID         = "cobblemon_harvest";
+
+    public static final String COBBLEMON_QUICK_BATTLE_EXP_ID    = "quick_battle";
 
     // Skill Effect Type IDs
     public static final String BLOCK_DROP_MULTIPLIER_EFFECT_ID  = "block_drop_multiplier";
+    public static final String BLOCK_DROP_EXTRA_EFFECT_ID       = "block_drop_extra";
     public static final String DAMAGE_MITIGATION_EFFECT_ID      = "damage_mitigation";
     public static final String LOOT_ROLL_EFFECT_ID              = "loot_roll";
     public static final String MOB_DROP_MULTIPLIER_EFFECT_ID    = "mob_drop_multiplier";
@@ -141,5 +145,7 @@ public class OSMCConstants {
             player.sendMessage(text);
         }
     }
+
+    public static boolean hasQuickBattle() { return FabricLoader.getInstance().isModLoaded("cobblemon_quick_battle"); }
 
 }

@@ -1,6 +1,7 @@
 package dev.elrol.osmc.registries;
 
 import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.CobblemonBlocks;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
@@ -10,6 +11,7 @@ import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.effects.*;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
+import dev.elrol.osmc.data.exp.quickbattle.QuickBattleExpSource;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.block.Blocks;
@@ -20,6 +22,7 @@ import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
@@ -182,15 +185,33 @@ public class OSMCSkillRegistry {
 
         skill.addExpSource(new WildBattleExpSource(1));
 
+        skill.addExpSource(new QuickBattleExpSource(1));
+
+        BlockHarvestExpSource bhSource = new BlockHarvestExpSource(1);
+        bhSource.addTarget(Identifier.of("cobblemon:apricorns"));
+        bhSource.addRequiredProperty("age", "3");
+        skill.addExpSource(bhSource);
+
+        BlockHarvestExpSource bh2Source = new BlockHarvestExpSource(2);
+        bh2Source.addTarget(Identifier.of("cobblemon:berries"));
+        bh2Source.addRequiredProperty("age", "5");
+        skill.addExpSource(bh2Source);
+
           ///////////////////
          ///Skill Effects///
         ///////////////////
 
-        //Block Drop Skill Effect
+        //Block Drop Multiplier Skill Effect
         BlockDropMultiplierSkillEffect bdmEffect = new BlockDropMultiplierSkillEffect(1, "extra", "1");
         bdmEffect.addTarget(Items.COBBLESTONE);
         bdmEffect.addBlock(Blocks.STONE);
         skill.addSkillEffect(bdmEffect);
+
+        //Block Drop Extra Skill Effect
+        BlockDropExtraSkillEffect bdeEffect = new BlockDropExtraSkillEffect(1, "extra", "1.5");
+        bdeEffect.addTarget(Blocks.DIRT);
+        bdeEffect.addTarget(Blocks.GRASS_BLOCK);
+        bdeEffect.addItem(Registries.ITEM.getKey(Items.DIAMOND).orElseThrow());
 
         //Mob Drop Skill Effect
         MobDropMultiplierSkillEffect mdmEffect = new MobDropMultiplierSkillEffect(3, "extra", "1");

@@ -73,18 +73,18 @@ public class LootTableMixin {
                         PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
                         Identifier skillID = boundEffect.skillID();
                         int skillLevel = data.getSkillLevel(skillID);
+                        int reqLevel = boundEffect.effect().getReqLevel();
+                        if(skillLevel < reqLevel) return;
                         double chance = effect.calculateChanceDrop(skillLevel);
                         int extraRolls = (int) chance;
                         if (MathUtils.percentChance((float) (chance - extraRolls))) extraRolls++;
 
                         if (extraRolls > 0) {
-
-
                             for (int i = 0; i < extraRolls; i++) {
                                 self().generateUnprocessedLoot(parameters, lootConsumer);
                             }
+                            OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extraRolls));
                         }
-                        OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extraRolls));
                     }
                 });
             } finally {

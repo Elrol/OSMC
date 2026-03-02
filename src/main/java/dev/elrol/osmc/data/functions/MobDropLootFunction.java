@@ -5,7 +5,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.BoundEffect;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.SkillTrigger;
-import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
 import dev.elrol.osmc.data.effects.MobDropMultiplierSkillEffect;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.registries.OSMCLootFunctionRegistry;
@@ -42,12 +41,16 @@ public class MobDropLootFunction extends ConditionalLootFunction {
             List<BoundEffect<?>> boundEffects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.ENTITY_DROP, stack.getItem());
 
             boundEffects.forEach(boundEffect -> {
+                PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+                Identifier skillID = boundEffect.skillID();
+                int skillLevel = data.getSkillLevel(skillID);
+                int reqLevel = boundEffect.effect().getReqLevel();
+                if(skillLevel < reqLevel) return;
+
                 if(boundEffect.effect() instanceof MobDropMultiplierSkillEffect effect) {
-                    PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
-                    Identifier skillID = boundEffect.skillID();
-                    int skillLevel = data.getSkillLevel(skillID);
                     int extra = MathUtils.handleExtraDrops(player.getServerWorld(), context.get(LootContextParameters.ORIGIN), stack, effect.calculateChanceDrop(skillLevel, stack.getCount()));
-                    OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extra));
+                    if(extra > 0 )
+                        OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extra));
                 }
             });
         }

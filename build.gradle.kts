@@ -13,6 +13,8 @@ val yarnMappings: String by project
 val osmcVersion: String by project
 val cobblemonVersion: String by project
 val papiVersion: String by project
+val cqbProjectID: String by project
+val cqbFileID: String by project
 
 base {
     archivesName.set("${project.property("archives_base_name")}-${osmcVersion}")
@@ -41,6 +43,14 @@ repositories {
     maven(url = "https://jitpack.io")
     maven(url = "https://repo.phoenix616.dev")
     maven(url = "https://maven.cobblemon.com")
+
+    maven {
+        name = "CurseMaven"
+        url = uri("https://www.cursemaven.com")
+        content {
+            includeGroup("curse.maven")
+        }
+    }
 }
 
 dependencies {
@@ -58,6 +68,9 @@ dependencies {
     implementation("net.objecthunter:exp4j:0.4.8")
     modImplementation("eu.pb4:placeholder-api:${papiVersion}")
     include("eu.pb4:placeholder-api:${papiVersion}")
+
+    modLocalRuntime("curse.maven:cobblemon-quick-battle-${cqbProjectID}:${cqbFileID}")
+    modCompileOnly("curse.maven:cobblemon-quick-battle-${cqbProjectID}:${cqbFileID}")
 }
 
 tasks.processResources {

@@ -5,19 +5,23 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.BoundEffect;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.data.effects.BlockDropExtraSkillEffect;
 import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
 import dev.elrol.osmc.libs.MathUtils;
-import dev.elrol.osmc.libs.OSMCConstants;
+import dev.elrol.osmc.libs.SkillUtils;
 import dev.elrol.osmc.registries.OSMCLootFunctionRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import dev.elrol.osmc.registries.OSMCSkillEffectRegistry;
 import net.minecraft.block.BlockState;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.function.ConditionalLootFunction;
 import net.minecraft.loot.function.LootFunctionType;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
@@ -40,19 +44,31 @@ public class BlockDropLootFunction extends ConditionalLootFunction {
     @Override
     protected ItemStack process(ItemStack stack, LootContext context) {
         if(context.get(LootContextParameters.THIS_ENTITY) instanceof ServerPlayerEntity player) {
-            List<BoundEffect<?>> boundEffects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.BLOCK_DROP, stack.getItem());
             BlockState state = context.get(LootContextParameters.BLOCK_STATE);
+            if(state == null || SkillUtils.hasEnchantment(player.getServerWorld().getRegistryManager(), player.getMainHandStack(), Enchantments.SILK_TOUCH)) return stack;
 
-            if(state == null) return stack;
+            List<BoundEffect<?>> boundEffects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.BLOCK_DROP, state.getBlock());
 
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
             boundEffects.forEach(boundEffect -> {
+                Identifier skillID = boundEffect.skillID();
+                int skillLevel = data.getSkillLevel(skillID);
+                int reqLevel = boundEffect.effect().getReqLevel();
+                if(skillLevel < reqLevel) return;
+
                 if(boundEffect.effect() instanceof BlockDropMultiplierSkillEffect effect) {
-                    if (!effect.isValid(state.getBlock())) return;
-                    PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
-                    Identifier skillID = boundEffect.skillID();
-                    int skillLevel = data.getSkillLevel(skillID);
+                    if (!effect.isValid(stack)) return;
                     int extra = MathUtils.handleExtraDrops(player.getServerWorld(), context.get(LootContextParameters.ORIGIN), stack, effect.calculateChanceDrop(skillLevel, stack.getCount()));
-                    OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extra));
+                    if(extra > 0)
+                        OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extra));
+                } else if(boundEffect.effect() instanceof BlockDropExtraSkillEffect effect) {
+                    effect.getItems().forEach(itemKey -> {
+                        Item item = Registries.ITEM.get(itemKey);
+                        if(item == null) return;
+                        int extra = MathUtils.handleExtraDrops(player.getServerWorld(), context.get(LootContextParameters.ORIGIN), new ItemStack(item), effect.calculateChanceDrop(skillLevel, stack.getCount()));
+                        if(extra > 0)
+                            OSMCPlayerDataRegistry.bufferExp(player.getUuid(), skillID, (int) effect.calculateExp(skillLevel, extra));
+                    });
                 }
             });
         }

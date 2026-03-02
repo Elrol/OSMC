@@ -53,7 +53,9 @@ public class OSMCSkillEffectRegistry {
 
         switch(effect) {
             case BlockDropMultiplierSkillEffect blockDropMultEffect ->
-                    indexOrGlobal(cache, blockDropMultEffect.getTargets(), blockDropMultEffect, id, registryManager, RegistryKeys.ITEM);
+                    indexOrGlobal(cache, blockDropMultEffect.getBlocks(), blockDropMultEffect, id, registryManager, RegistryKeys.BLOCK);
+            case BlockDropExtraSkillEffect blockDropExtraEffect ->
+                    indexOrGlobal(cache, blockDropExtraEffect.getTargets(), blockDropExtraEffect, id, registryManager, RegistryKeys.BLOCK);
             case MobDropMultiplierSkillEffect mobDropMultEffect ->
                     indexOrGlobal(cache, mobDropMultEffect.getTargets(), mobDropMultEffect, id, registryManager, RegistryKeys.ITEM);
             case LootRollSkillEffect lootRollEffect ->

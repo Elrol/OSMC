@@ -4,21 +4,15 @@ import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.pokemon.EVs;
 import com.cobblemon.mod.common.pokemon.IVs;
 import com.cobblemon.mod.common.pokemon.Pokemon;
-import dev.elrol.osmc.data.BoundEffect;
-import dev.elrol.osmc.data.SkillEffect;
-import dev.elrol.osmc.data.effects.BlockDropMultiplierSkillEffect;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -106,12 +100,16 @@ public class MathUtils {
         return random.nextFloat(1.0f) <= (chance/100.0f);
     }
 
-    public static int handleExtraDrops(ServerWorld world, Vec3d origin, ItemStack stack, float chance) {
+    public static int confirmChance(float chance) {
         int count = (int) chance;
         float remainder = chance - count;
 
         if(percentChance(remainder * 100f)) count++;
+        return count;
+    }
 
+    public static int handleExtraDrops(ServerWorld world, Vec3d origin, ItemStack stack, float chance) {
+        int count = confirmChance(chance);
         int finalCount = count;
 
         int max = stack.getItem().getMaxCount();

@@ -10,6 +10,7 @@ import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.SkillTrigger;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
+import dev.elrol.osmc.data.exp.quickbattle.QuickBattleExpSource;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registry;
@@ -116,6 +117,13 @@ public class OSMCExpSourceRegistry {
 
             case FossilReviveExpSource fossilRevive ->
                     addBoundSource(cache, fossilRevive, id);
+
+            case QuickBattleExpSource quickBattle ->
+                    indexSpeciesOrGlobal(cache, quickBattle.getTargets(), quickBattle, id);
+
+            case BlockHarvestExpSource blockHarvest ->
+                indexOrGlobal(cache, blockHarvest.getTargets(), blockHarvest, id, registryManager, RegistryKeys.BLOCK);
+
             default -> {}
         }
     }

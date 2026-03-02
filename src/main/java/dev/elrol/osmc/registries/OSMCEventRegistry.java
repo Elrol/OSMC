@@ -11,15 +11,18 @@ import dev.elrol.osmc.data.*;
 import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
+import dev.elrol.osmc.data.exp.quickbattle.QuickBattleExpSource;
 import dev.elrol.osmc.data.functions.BlockDropLootFunction;
 import dev.elrol.osmc.data.functions.MobDropLootFunction;
 import dev.elrol.osmc.events.*;
+import dev.elrol.osmc.interfaces.IPlacedTracker;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.SkillUtils;
 import kotlin.Unit;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -31,14 +34,22 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.BlockEvent;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.world.WorldEvents;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkSection;
 
 import java.util.*;
 
@@ -50,6 +61,32 @@ public class OSMCEventRegistry {
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
+
+        HarvestEvent.EVENT.register(((player, state, pos) -> {
+            List<BoundSource<?>> boundSources = OSMCExpSourceRegistry.getSources(SkillTrigger.HARVEST, state.getBlock());
+
+            if(boundSources.isEmpty()) return;
+
+            for (BoundSource<?> boundSource : boundSources) {
+                if(boundSource.source() instanceof BlockHarvestExpSource source) {
+                    if(source.hasProperties(state))
+                        OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.getExpGain());
+                }
+            }
+        }));
+
+        QuickBattleEvent.EVENT.register((attacker, defender, result) -> {
+            if(attacker.getOwnerPlayer() instanceof ServerPlayerEntity player) {
+                if(result.isVictory()) {
+                    List<BoundSource<?>> boundSources = OSMCExpSourceRegistry.getSources(SkillTrigger.BATTLE_END, defender.getSpecies());
+                    boundSources.forEach(boundSource -> {
+                        if(boundSource.source() instanceof QuickBattleExpSource source) {
+                            OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.calculate(defender));
+                        }
+                    });
+                }
+            }
+        });
 
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe(event -> {
             if(!OSMC.CONFIG.getCobblemonTiers().getEnabled()) return;
@@ -295,16 +332,44 @@ public class OSMCEventRegistry {
             return ActionResult.PASS;
         });
 
+        BlockPlaceEvent.POST.register(((pos, world, player, stack, state) -> {
+            if(world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer) {
+                Chunk chunk = serverWorld.getChunk(pos);
+                ChunkSection section = chunk.getSection(chunk.getSectionIndex(pos.getY()));
+                if(section == null) return;
+
+                ((IPlacedTracker)section).osmc$setPlaced(
+                        pos.getX() & 15,
+                        pos.getY() & 15,
+                        pos.getZ() & 15
+                );
+            }
+        }));
+
         PlayerBlockBreakEvents.BEFORE.register((world, playerEntity, pos, state, blockEntity) -> {
              if(playerEntity instanceof ServerPlayerEntity player) {
                  List<BoundSource<?>> blockBreakList = OSMCExpSourceRegistry.getSources(SkillTrigger.BLOCK_BREAK, state.getBlock());
+                 boolean isSilkTouch = SkillUtils.hasEnchantment(world.getRegistryManager(), player.getMainHandStack(), Enchantments.SILK_TOUCH);
+
                  if(blockBreakList.isEmpty()) return true;
+
                  blockBreakList.forEach(boundSource -> {
                      if(boundSource.source() instanceof BlockBreakExpSource source) {
                          if (!source.hasProperties(state)) return;
+                         if(source.getExpGain() > 1 && isSilkTouch) return;
                          OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.getExpGain());
                      }
                  });
+
+                 Chunk chunk = world.getChunk(pos);
+                 ChunkSection section = chunk.getSection(chunk.getSectionIndex(pos.getY()));
+                 if(section != null) {
+                     ((IPlacedTracker)section).osmc$break(
+                             pos.getX() & 15,
+                             pos.getY() & 15,
+                             pos.getZ() & 15
+                     );
+                 }
              }
              return true;
         });
