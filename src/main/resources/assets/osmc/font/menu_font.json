@@ -1,0 +1,8 @@
+{
+  "providers": [
+    {"type": "bitmap", "file": "osmc:gui/pixel.png",        "ascent": -2000,"height": -3,"chars": ["七"]},
+    {"type": "bitmap", "file": "osmc:gui/dev.png",          "ascent": 14,"height": 256,"chars": ["≇"]},
+    {"type": "bitmap", "file": "osmc:gui/skills_menu.png",  "ascent": 14,"height": 256,"chars": ["≀"]},
+    {"type": "bitmap", "file": "osmc:gui/skill_menu.png",   "ascent": 14,"height": 256,"chars": ["≁"]}
+  ]
+}

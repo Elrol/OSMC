@@ -1,0 +1,10 @@
+{
+  "id": "osmc:gui_back_button",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/back"
+    }
+  }
+}

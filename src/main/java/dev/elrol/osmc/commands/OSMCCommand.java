@@ -12,6 +12,8 @@ import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.SkillUtils;
+import dev.elrol.osmc.menus.DevMenu;
+import dev.elrol.osmc.menus.OSMCMenu;
 import dev.elrol.osmc.registries.*;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
@@ -26,6 +28,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -36,53 +39,55 @@ public class OSMCCommand extends BaseCommand {
     @Override
     public void init(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess access, CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(literal("osmc")
-                .executes(OSMCCommand::osmcInfo)
+                .executes(this::osmcInfo)
                 .then(literal("reload")
                         .requires(source -> {
                             //TODO change this to only allow ops / luckperms
                             return source.hasPermissionLevel(4);
                         })
-                        .executes(OSMCCommand::reload))
+                        .executes(this::reload))
                 .then(literal("skill")
                         .then(argument("skill", IdentifierArgumentType.identifier())
-                                .suggests(OSMCCommand::SkillSuggestions)
-                                .executes(OSMCCommand::showSingleSkill)
+                                .suggests(this::SkillSuggestions)
+                                .executes(this::showSingleSkill)
                                 .then(argument("target", EntityArgumentType.player())
-                                        .executes(OSMCCommand::showOtherSingleSkill))))
+                                        .executes(this::showOtherSingleSkill))))
                 .then(literal("skills")
-                        .executes(OSMCCommand::showSkills)
+                        .executes(this::showSkills)
                         .then(argument("target", EntityArgumentType.player())
-                                .executes(OSMCCommand::showOtherSkills)))
+                                .executes(this::showOtherSkills)))
                 .then(literal("set")
                         .requires((source) -> {
                             //TODO change this to only allow ops / luckperms
                             return source.hasPermissionLevel(4);
                         })
                         .then(argument("skill", IdentifierArgumentType.identifier())
-                                .suggests(OSMCCommand::SkillSuggestions)
+                                .suggests(this::SkillSuggestions)
                                 .then(literal("level")
                                         .then(argument("level", IntegerArgumentType.integer(1))
-                                                .executes(OSMCCommand::setSkillLevel)
+                                                .executes(this::setSkillLevel)
                                                 .then(argument("target", EntityArgumentType.player())
-                                                        .executes(OSMCCommand::setPlayerSkillLevel))))
+                                                        .executes(this::setPlayerSkillLevel))))
                                 .then(literal("exp")
                                         .then(argument("exp", LongArgumentType.longArg(0))
-                                                .executes(OSMCCommand::setSkillExp)
+                                                .executes(this::setSkillExp)
                                                 .then(argument("target", EntityArgumentType.player())
-                                                        .executes(OSMCCommand::setPlayerSkillExp))))
+                                                        .executes(this::setPlayerSkillExp))))
                         ))
                 .then(literal("leaderboard")
                         .then(argument("skill", IdentifierArgumentType.identifier())
-                                .suggests(OSMCCommand::SkillSuggestions)
-                                .executes(OSMCCommand::displayLeaderboard)))
+                                .suggests(this::SkillSuggestions)
+                                .executes(this::displayLeaderboard)))
+                .then(literal("menu")
+                        .executes(this::openMenu))
         );
     }
 
-    private static CompletableFuture<Suggestions> SkillSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    private CompletableFuture<Suggestions> SkillSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         return CommandSource.suggestIdentifiers(OSMCSkillRegistry.getAll().keySet(), builder);
     }
 
-    private static int osmcInfo(CommandContext<ServerCommandSource> context) {
+    private int osmcInfo(CommandContext<ServerCommandSource> context) {
         List<MutableText> texts = new ArrayList<>();
 
         if(context.getSource().getPlayer() instanceof ServerPlayerEntity player) {
@@ -115,7 +120,7 @@ public class OSMCCommand extends BaseCommand {
         return 1;
     }
 
-    private static int setPlayerSkillLevel(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private int setPlayerSkillLevel(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "target");
         if(player != null) {
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
@@ -139,7 +144,7 @@ public class OSMCCommand extends BaseCommand {
 
     }
 
-    private static int setPlayerSkillExp(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private int setPlayerSkillExp(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "target");
         if(player != null) {
             long exp = LongArgumentType.getLong(context, "exp");
@@ -160,7 +165,7 @@ public class OSMCCommand extends BaseCommand {
         return 1;
     }
 
-    private static int setSkillLevel(CommandContext<ServerCommandSource> context) {
+    private int setSkillLevel(CommandContext<ServerCommandSource> context) {
         ServerCommandSource source = context.getSource();
         if(source.isExecutedByPlayer()) {
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
@@ -184,7 +189,7 @@ public class OSMCCommand extends BaseCommand {
         return 1;
     }
 
-    private static int setSkillExp(CommandContext<ServerCommandSource> context) {
+    private int setSkillExp(CommandContext<ServerCommandSource> context) {
         ServerCommandSource source = context.getSource();
         if(source.isExecutedByPlayer()) {
             Identifier skillID = IdentifierArgumentType.getIdentifier(context, "skill");
@@ -205,19 +210,19 @@ public class OSMCCommand extends BaseCommand {
         return 1;
     }
 
-    private static void setSkillExp(Identifier skillID, ServerPlayerEntity player, long exp) {
+    private void setSkillExp(Identifier skillID, ServerPlayerEntity player, long exp) {
         PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
         data.setSkillExp(skillID, exp);
         OSMCPlayerDataRegistry.updatePlayerData(data);
     }
 
-    private static void changeSkillExp(Identifier skillID, ServerPlayerEntity player, long exp) {
+    private void changeSkillExp(Identifier skillID, ServerPlayerEntity player, long exp) {
         PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
         data.addSkillExp(skillID, exp);
         OSMCPlayerDataRegistry.updatePlayerData(data);
     }
 
-    private static int showSkills(CommandContext<ServerCommandSource> context) {
+    private int showSkills(CommandContext<ServerCommandSource> context) {
         if(context.getSource().isExecutedByPlayer()) {
             ServerPlayerEntity player = context.getSource().getPlayer();
             displayAllSkills(context.getSource(), player);
@@ -227,14 +232,14 @@ public class OSMCCommand extends BaseCommand {
         return 0;
     }
 
-    private static int showOtherSkills(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private int showOtherSkills(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "target");
         displayAllSkills(context.getSource(), player);
 
         return 1;
     }
 
-    private static int showSingleSkill(CommandContext<ServerCommandSource> context) {
+    private int showSingleSkill(CommandContext<ServerCommandSource> context) {
         if(context.getSource().isExecutedByPlayer()) {
             ServerPlayerEntity player = context.getSource().getPlayer();
             displayOneSkill(context.getSource(), player, context.getArgument("skill", Identifier.class));
@@ -244,19 +249,21 @@ public class OSMCCommand extends BaseCommand {
         return 0;
     }
 
-    private static int showOtherSingleSkill(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private int showOtherSingleSkill(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "target");
         displayOneSkill(context.getSource(), player, context.getArgument("skill", Identifier.class));
 
         return 0;
     }
 
-    private static int reload(CommandContext<ServerCommandSource> context) {
+    private int reload(CommandContext<ServerCommandSource> context) {
         context.getSource().sendMessage(Text.literal("Reloading OSMC configs and data").formatted(Formatting.GREEN));
 
         OSMC.CONFIG = OSMC.CONFIG.load();
 
+        OSMCAbilityRegistry.load(context.getSource().getServer());
         OSMCSkillRegistry.load(context.getSource().getServer());
+
         OSMCExpSourceRegistry.rebuild(OSMCSkillRegistry.getAll(), context.getSource().getRegistryManager());
         OSMCSkillEffectRegistry.rebuild(OSMCSkillRegistry.getAll(), context.getSource().getRegistryManager());
         OSMCCobblemonTierRegistry.init();
@@ -270,25 +277,25 @@ public class OSMCCommand extends BaseCommand {
         return 1;
     }
 
-    private static void displayOneSkill(ServerCommandSource source, ServerPlayerEntity target, Identifier id) {
+    private void displayOneSkill(ServerCommandSource source, ServerPlayerEntity target, Identifier id) {
         List<MutableText> texts = getSkillHeader(target);
         PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
         texts.add(getSkill(data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id))));
         packageTexts(source, texts);
     }
 
-    private static void displayAllSkills(ServerCommandSource source, ServerPlayerEntity target) {
+    private void displayAllSkills(ServerCommandSource source, ServerPlayerEntity target) {
         List<MutableText> texts = getSkillHeader(target);
         PlayerSkillData data = OSMCPlayerDataRegistry.get(target.getUuid());
         OSMCSkillRegistry.getAll().keySet().forEach(id -> texts.add(getSkill(data.getSkillInfo(id), Objects.requireNonNull(OSMCSkillRegistry.get(id)))));
         packageTexts(source, texts);
     }
 
-    private static List<MutableText> getSkillHeader(ServerPlayerEntity target) {
+    private List<MutableText> getSkillHeader(ServerPlayerEntity target) {
         return new ArrayList<>(List.of(Text.empty().append(target.getDisplayName()).append(Text.literal("'s Stats:")).formatted(Formatting.BOLD)));
     }
 
-    private static MutableText getSkill(PlayerSkillData.SkillExpInfo info, Skill skill) {
+    private MutableText getSkill(PlayerSkillData.SkillExpInfo info, Skill skill) {
         return Text.literal("   ")
                 .append(skill.getTextName())
                 .append(Text.literal(" : " + info.level() + " [ "))
@@ -298,7 +305,7 @@ public class OSMCCommand extends BaseCommand {
                 .append(Text.literal(" ]"));
     }
 
-    private static int displayLeaderboard(CommandContext<ServerCommandSource> context) {
+    private int displayLeaderboard(CommandContext<ServerCommandSource> context) {
         Identifier id = context.getArgument("skill", Identifier.class);
         List<OSMCLeaderboard.Entry> entries = OSMCLeaderboard.get(id);
 
@@ -314,7 +321,7 @@ public class OSMCCommand extends BaseCommand {
         return 1;
     }
 
-    private static List<MutableText> getLeaderboardHeader(Identifier skillID) {
+    private List<MutableText> getLeaderboardHeader(Identifier skillID) {
         List<MutableText> texts = new ArrayList<>();
         Skill skill = OSMCSkillRegistry.get(skillID);
         if(skill == null) {
@@ -327,7 +334,7 @@ public class OSMCCommand extends BaseCommand {
         return texts;
     }
 
-    private static MutableText getEntry(Identifier skillID, OSMCLeaderboard.Entry entry, int rank) {
+    private MutableText getEntry(Identifier skillID, OSMCLeaderboard.Entry entry, int rank) {
         Formatting color = Formatting.GRAY;
         PlayerSkillData data = OSMCPlayerDataRegistry.get(entry.uuid());
         return Text.literal(" ").append(Text.literal(rank > 9 ? "│" + rank + "│ " : "│ " + rank + "│ ").formatted(color))
@@ -338,7 +345,7 @@ public class OSMCCommand extends BaseCommand {
                 );
     }
 
-    private static void packageTexts(ServerCommandSource source, List<MutableText> texts) {
+    private void packageTexts(ServerCommandSource source, List<MutableText> texts) {
         if(texts.isEmpty()) return;
 
         MutableText output = texts.stream()
@@ -348,5 +355,14 @@ public class OSMCCommand extends BaseCommand {
         if(!output.equals(Text.empty())) {
             source.sendMessage(output);
         }
+    }
+
+    private int openMenu(CommandContext<ServerCommandSource> context) {
+        if(context.getSource().getPlayer() instanceof ServerPlayerEntity player) {
+            OSMCMenu osmcMenu = new OSMCMenu(player);
+            osmcMenu.open();
+            return 1;
+        }
+        return 0;
     }
 }

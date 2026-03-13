@@ -1,0 +1,10 @@
+{
+  "id": "osmc:gray_button",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/button/gray_button"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "osmc:lime_button_left",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/button/lime_button_left"
+    }
+  }
+}

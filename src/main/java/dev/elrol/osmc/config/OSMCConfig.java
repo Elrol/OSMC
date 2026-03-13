@@ -9,19 +9,15 @@ import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.PlayerSkillData;
-import dev.elrol.osmc.data.CobblemonTier;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class OSMCConfig {
     private static final String FILENAME = "config.json";
@@ -35,8 +31,9 @@ public class OSMCConfig {
             Codec.INT.fieldOf("leaderboardCount").forGetter(OSMCConfig::getLeaderboardCount),
             DamageMitigationConfig.CODEC.fieldOf("damageMitigation").forGetter(OSMCConfig::getDamageMitigation),
             TrainerLevelConfig.CODEC.fieldOf("trainerLevel").forGetter(OSMCConfig::getTrainerLevel),
-            CobblemonTiers.CODEC.fieldOf("cobblemonTiers").forGetter(OSMCConfig::getCobblemonTiers)
-    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, damageMitigation, trainerLevel, cobblemonTiers) -> {
+            CobblemonTiers.CODEC.fieldOf("cobblemonTiers").forGetter(OSMCConfig::getCobblemonTiers),
+            Codec.INT.optionalFieldOf("millisecondsToActivateAbility", 500).forGetter(OSMCConfig::getMillisecondsToActivateAbility)
+    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, damageMitigation, trainerLevel, cobblemonTiers, millisecondsToActivateAbility) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
@@ -51,6 +48,8 @@ public class OSMCConfig {
         data.trainerLevel = trainerLevel;
         data.cobblemonTiers = cobblemonTiers;
 
+        data.millisecondsToActivateAbility = millisecondsToActivateAbility;
+
         return data;
     }));
 
@@ -61,6 +60,7 @@ public class OSMCConfig {
     private int autoSave = 5;
     private int expPayout = 20;
     private int leaderboardCount = 5;
+    private int millisecondsToActivateAbility = 500;
 
     private DamageMitigationConfig damageMitigation = new DamageMitigationConfig();
     private TrainerLevelConfig trainerLevel = new TrainerLevelConfig();
@@ -83,6 +83,9 @@ public class OSMCConfig {
     public TrainerLevelConfig getTrainerLevel() { return trainerLevel; }
 
     public CobblemonTiers getCobblemonTiers() { return cobblemonTiers; }
+
+    public int getMillisecondsToActivateAbility() { return millisecondsToActivateAbility; }
+
     public void save() {
 
         trainerLevel.check();

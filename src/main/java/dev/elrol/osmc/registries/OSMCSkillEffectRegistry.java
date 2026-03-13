@@ -3,7 +3,7 @@ package dev.elrol.osmc.registries;
 import com.mojang.datafixers.util.Either;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.*;
-import dev.elrol.osmc.data.effects.*;
+import dev.elrol.osmc.data.skill_effects.*;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;

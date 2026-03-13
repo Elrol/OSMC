@@ -1,14 +1,13 @@
 package dev.elrol.osmc.registries;
 
 import com.cobblemon.mod.common.Cobblemon;
-import com.cobblemon.mod.common.CobblemonBlocks;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.effects.*;
+import dev.elrol.osmc.data.skill_effects.*;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.data.exp.quickbattle.QuickBattleExpSource;
@@ -48,7 +47,7 @@ public class OSMCSkillRegistry {
         SKILL_MAP.clear();
         File[] files = OSMCConstants.SKILL_CONFIG_DIR.listFiles(file -> file.getName().endsWith(".json"));
         if(files == null) {
-            OSMCSkillRegistry.registerExampleSkill(server);
+            registerExampleSkill(server);
             return;
         }
 
@@ -94,7 +93,7 @@ public class OSMCSkillRegistry {
         if(skill.isEnabled()) SKILL_MAP.put(skill.getID(), skill);
     }
 
-    public static void registerExampleSkill(MinecraftServer server) {
+    private static void registerExampleSkill(MinecraftServer server) {
 
         Skill skill = new Skill(OSMCConstants.osmcID("example_skill"));
 

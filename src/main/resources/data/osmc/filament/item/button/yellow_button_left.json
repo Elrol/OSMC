@@ -1,0 +1,10 @@
+{
+  "id": "osmc:yellow_button_left",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/button/yellow_button_left"
+    }
+  }
+}

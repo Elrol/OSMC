@@ -3,7 +3,7 @@ package dev.elrol.osmc.mixin;
 import dev.elrol.osmc.data.BoundEffect;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.SkillTrigger;
-import dev.elrol.osmc.data.effects.LootRollSkillEffect;
+import dev.elrol.osmc.data.skill_effects.LootRollSkillEffect;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.OSMCLootTracker;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;

@@ -8,7 +8,7 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.*;
-import dev.elrol.osmc.data.effects.StatModifierSkillEffect;
+import dev.elrol.osmc.data.skill_effects.StatModifierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
 import dev.elrol.osmc.data.exp.quickbattle.QuickBattleExpSource;
@@ -18,11 +18,9 @@ import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.interfaces.IPlacedTracker;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.SkillUtils;
-import kotlin.Unit;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -34,20 +32,17 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
-import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.BlockEvent;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.world.WorldEvents;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -58,6 +53,8 @@ public class OSMCEventRegistry {
     private static int ticksSinceSave = 0;
     private static int ticksSinceBufferPayout = 0;
     private static final Random random = new Random();
+
+    private static final Map<UUID, Long> LAST_CLICK_CACHE = new HashMap<>();
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
@@ -256,8 +253,32 @@ public class OSMCEventRegistry {
             if(playerEntity instanceof ServerPlayerEntity player) {
                 OSMCExpSourceRegistry.getSources(SkillTrigger.ITEM_USE, player.getStackInHand(hand).getItem()).forEach(boundSource -> {
                     if(boundSource.source() instanceof ItemUseExpSource source)
-                        OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), boundSource.source().getExpGain());
+                        OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.getExpGain());
                 });
+
+                long curTime = System.currentTimeMillis();
+                long lastTime = LAST_CLICK_CACHE.getOrDefault(player.getUuid(), 0L);
+
+                if(curTime - lastTime < OSMC.CONFIG.getMillisecondsToActivateAbility()) {
+                    // TODO double click activated, use ability
+                    Skill targetSkill = null;
+                    ItemStack heldItem = player.getMainHandStack();
+
+                    for (Skill skill : OSMCSkillRegistry.getAll().values()) {
+                        if(skill.isValidTool(heldItem)) {
+                            targetSkill = skill;
+                            break;
+                        }
+                    }
+                    if(targetSkill != null)
+                        player.sendMessage(Text.of("Activate ability " + targetSkill.getAbilityID()));
+                    else
+                        player.sendMessage(Text.of("No active ability found for current tool"));
+
+                    LAST_CLICK_CACHE.put(player.getUuid(), 0L);
+                } else {
+                    LAST_CLICK_CACHE.put(player.getUuid(), curTime);
+                }
             }
             return TypedActionResult.pass(playerEntity.getStackInHand(hand));
         }));
@@ -410,10 +431,15 @@ public class OSMCEventRegistry {
         }));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            OSMCItems.register();
+
+            OSMCAbilityRegistry.init(server);
             OSMCSkillRegistry.init(server);
 
             OSMCExpSourceRegistry.rebuild(OSMCSkillRegistry.getAll(), server.getRegistryManager());
             OSMCSkillEffectRegistry.rebuild(OSMCSkillRegistry.getAll(), server.getRegistryManager());
+
+
 
             OSMC.LOGGER.info("Loading all player skill data");
             OSMCPlayerDataRegistry.init();

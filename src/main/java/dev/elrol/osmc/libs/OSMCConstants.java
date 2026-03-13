@@ -6,10 +6,7 @@ import com.google.gson.GsonBuilder;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import dev.elrol.osmc.OSMC;
-import dev.elrol.osmc.data.ExpSourceType;
-import dev.elrol.osmc.data.PlayerSkillData;
-import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.SkillEffectType;
+import dev.elrol.osmc.data.*;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import dev.elrol.osmc.registries.OSMCSkillRegistry;
 import net.fabricmc.loader.api.FabricLoader;
@@ -43,14 +40,17 @@ public class OSMCConstants {
     // Identifiers
     public static final Identifier EXP_TYPE_ID = Identifier.of(MODID, "exp_data_type");
     public static final Identifier EFFECT_TYPE_ID = Identifier.of(MODID, "effect_data_type");
+    public static final Identifier ABILITY_EFFECT_TYPE_ID = Identifier.of(MODID, "ability_effect_data_type");
 
     // Registry Keys
     public static final RegistryKey<Registry<ExpSourceType<?>>> EXP_TYPE_KEY = RegistryKey.ofRegistry(EXP_TYPE_ID);
     public static final RegistryKey<Registry<SkillEffectType<?>>> EFFECT_TYPE_KEY = RegistryKey.ofRegistry(EFFECT_TYPE_ID);
+    public static final RegistryKey<Registry<AbilityEffectType<?>>> ABILITY_EFFECT_TYPE_KEY = RegistryKey.ofRegistry(ABILITY_EFFECT_TYPE_ID);
 
     // Files
     public static final File ROOT_DIR = FabricLoader.getInstance().getGameDir().toFile();
     public static final File CONFIG_DIR = new File(FabricLoader.getInstance().getConfigDir().toFile(), "OSMC");
+    public static final File ABILITY_CONFIG_DIR = new File(CONFIG_DIR, "Abilities");
     public static final File SKILL_CONFIG_DIR = new File(CONFIG_DIR, "Skills");
     public static final File TIER_CONFIG_DIR = new File(CONFIG_DIR, "Tiers");
 
@@ -90,6 +90,9 @@ public class OSMCConstants {
     public static final String LOOT_ROLL_EFFECT_ID              = "loot_roll";
     public static final String MOB_DROP_MULTIPLIER_EFFECT_ID    = "mob_drop_multiplier";
     public static final String STAT_MODIFIER_EFFECT_ID          = "stat_modifier";
+
+    // Ability Effect Type IDs
+    public static final String DURATION_ABILITY_EFFECT_ID       = "duration_ability";
 
     // Codecs
     public static final Codec<Either<RegistryKey<Item>, TagKey<Item>>>                          TARGET_ITEM_CODEC           = Codec.either(RegistryKey.createCodec(RegistryKeys.ITEM), TagKey.codec(RegistryKeys.ITEM));

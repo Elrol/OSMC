@@ -5,7 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.elrol.osmc.data.BoundEffect;
 import dev.elrol.osmc.data.PlayerSkillData;
 import dev.elrol.osmc.data.SkillTrigger;
-import dev.elrol.osmc.data.effects.MobDropMultiplierSkillEffect;
+import dev.elrol.osmc.data.skill_effects.MobDropMultiplierSkillEffect;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.registries.OSMCLootFunctionRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;

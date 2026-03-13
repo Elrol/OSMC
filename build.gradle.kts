@@ -69,22 +69,29 @@ dependencies {
     modImplementation("eu.pb4:placeholder-api:${papiVersion}")
     include("eu.pb4:placeholder-api:${papiVersion}")
 
+    modImplementation("eu.pb4:polymer-core:0.9.18+1.21.1")
+    modImplementation("eu.pb4:polymer-resource-pack:0.9.18+1.21.1")
+    modImplementation("eu.pb4:polymer-autohost:0.9.18+1.21.1")
+    modImplementation("eu.pb4:sgui:1.6.1+1.21.1")
+
+    modImplementation("de.tomalbrc:filament:0.14.10+1.21.1")
+
     modLocalRuntime("curse.maven:cobblemon-quick-battle-${cqbProjectID}:${cqbFileID}")
     modCompileOnly("curse.maven:cobblemon-quick-battle-${cqbProjectID}:${cqbFileID}")
 }
 
 tasks.processResources {
     inputs.property("version", project.version)
-    inputs.property("minecraft_version", "${minecraftVersion}")
-    inputs.property("loader_version", "${fabricLoaderVersion}")
+    inputs.property("minecraft_version", minecraftVersion)
+    inputs.property("loader_version", fabricLoaderVersion)
     filteringCharset = "UTF-8"
 
     filesMatching("fabric.mod.json") {
         // FIX 2: Explicitly casting properties to String to avoid "Pair<String, Any?>" mismatch
         expand(
             "version" to project.version,
-            "minecraft_version" to "${minecraftVersion}",
-            "loader_version" to "${fabricLoaderVersion}"
+            "minecraft_version" to minecraftVersion,
+            "loader_version" to fabricLoaderVersion
         )
     }
 }

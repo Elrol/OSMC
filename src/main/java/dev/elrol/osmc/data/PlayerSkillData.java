@@ -18,12 +18,15 @@ public class PlayerSkillData {
     public static Codec<PlayerSkillData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("uuid").forGetter(PlayerSkillData::getUuidString),
             Codec.unboundedMap(Identifier.CODEC, Codec.LONG).fieldOf("skillExp").forGetter(PlayerSkillData::getSkillExpMap),
+            Codec.unboundedMap(Identifier.CODEC, Codec.unboundedMap(Identifier.CODEC, Codec.BOOL)).optionalFieldOf("abilityEffectSettings", new LinkedHashMap<>()).forGetter(PlayerSkillData::getAbilityEffectsSettings),
             TextCodecs.CODEC.optionalFieldOf("username", Text.empty()).forGetter(PlayerSkillData::getUsername)
-    ).apply(instance, (uuid, skillExp, username) -> {
+    ).apply(instance, (uuid, skillExp, abilityEffectSettings, username) -> {
         PlayerSkillData data = new PlayerSkillData(UUID.fromString(uuid));
 
-        data.SKILL_EXP.putAll(skillExp);
         data.username = username;
+        data.SKILL_EXP.putAll(skillExp);
+        abilityEffectSettings.forEach((key, value) ->
+                data.ABILITY_EFFECT_SETTINGS.put(key, new LinkedHashMap<>(value)));
 
         return data;
     }));
@@ -31,6 +34,7 @@ public class PlayerSkillData {
     private final UUID uuid;
     private final Map<Identifier, Long> SKILL_EXP = new LinkedHashMap<>();
     private final Map<Identifier, Integer> SKILL_LEVEL_CACHE = new LinkedHashMap<>();
+    private final Map<Identifier, Map<Identifier, Boolean>> ABILITY_EFFECT_SETTINGS = new LinkedHashMap<>();
     private Text username = Text.empty();
 
     public PlayerSkillData(UUID uuid) {
@@ -99,6 +103,21 @@ public class PlayerSkillData {
 
     public void rebuildLevelCache() {
         SKILL_EXP.keySet().forEach(this::getSkillLevel);
+    }
+
+    public Map<Identifier, Map<Identifier, Boolean>> getAbilityEffectsSettings() { return ABILITY_EFFECT_SETTINGS; }
+
+    public void toggleAbilityEffectSettings(Identifier skillID, Identifier abilityEffectID) {
+        setAbilityEffectSetting(skillID, abilityEffectID, !getAbilityEffectSetting(skillID, abilityEffectID));
+    }
+
+    public boolean getAbilityEffectSetting(Identifier skillID, Identifier abilityEffectID) {
+        return ABILITY_EFFECT_SETTINGS.computeIfAbsent(skillID, id -> new LinkedHashMap<>()).computeIfAbsent(abilityEffectID, abilityID -> true);
+    }
+
+    public void setAbilityEffectSetting(Identifier skillID, Identifier abilityEffectID, boolean value) {
+        ABILITY_EFFECT_SETTINGS.computeIfAbsent(skillID, id -> new LinkedHashMap<>())
+                .put(abilityEffectID, value);
     }
 
     public record SkillExpInfo(int level, long currentExp, long targetExp) {}

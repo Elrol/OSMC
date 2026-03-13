@@ -1,0 +1,10 @@
+{
+  "id": "osmc:gui_left_button",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/page/left"
+    }
+  }
+}

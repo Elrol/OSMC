@@ -1,0 +1,6 @@
+{
+    "parent": "osmc:item/slot",
+    "textures": {
+        "layer0": "osmc:item/gui/button/button_light_gray"
+    }
+}

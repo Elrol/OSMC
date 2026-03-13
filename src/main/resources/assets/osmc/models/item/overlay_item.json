@@ -1,0 +1,17 @@
+{
+    "parent": "minecraft:item/generated",
+	"textures": {
+		"layer0": "arrowcore:item/gui/back",
+		"overlay0": "arrowcore:item/gui/main/settings"
+	},
+	"elements": [
+		{
+			"name": "overlay",
+			"from": [0, 0, 0],
+			"to": [16, 0, 16],
+			"faces": {
+				"up": {"uv": [16, 16, 0, 0], "texture": "#overlay"}
+			}
+		}
+	]
+}

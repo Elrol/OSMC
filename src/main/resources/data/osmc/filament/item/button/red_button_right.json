@@ -1,0 +1,10 @@
+{
+  "id": "osmc:red_button_right",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/button/red_button_right"
+    }
+  }
+}

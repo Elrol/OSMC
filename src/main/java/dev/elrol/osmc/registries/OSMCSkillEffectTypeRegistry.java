@@ -2,7 +2,7 @@ package dev.elrol.osmc.registries;
 
 import dev.elrol.osmc.data.SkillEffect;
 import dev.elrol.osmc.data.SkillEffectType;
-import dev.elrol.osmc.data.effects.*;
+import dev.elrol.osmc.data.skill_effects.*;
 import dev.elrol.osmc.libs.OSMCConstants;
 import net.minecraft.registry.Registry;
 
