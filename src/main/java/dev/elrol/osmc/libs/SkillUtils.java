@@ -2,10 +2,14 @@ package dev.elrol.osmc.libs;
 
 import com.mojang.datafixers.util.Either;
 import dev.elrol.osmc.OSMC;
-import dev.elrol.osmc.data.CobblemonTier;
-import dev.elrol.osmc.data.PlayerSkillData;
+import dev.elrol.osmc.data.*;
+import dev.elrol.osmc.data.ability_effects.CooldownAbilityEffect;
+import dev.elrol.osmc.data.ability_effects.DurationAbilityEffect;
+import dev.elrol.osmc.data.ability_effects.ShapeBreakAbilityEffect;
+import dev.elrol.osmc.registries.OSMCAbilityRegistry;
 import dev.elrol.osmc.registries.OSMCCobblemonTierRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
+import dev.elrol.osmc.registries.OSMCSkillRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -19,13 +23,71 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class SkillUtils {
+
+    public static int calcAbilityInteger(ServerPlayerEntity player, Identifier skillID, AbilityAction action) {
+        Skill skill = OSMCSkillRegistry.get(skillID);
+        if (skill == null || skill.getAbility() == null) return 0;
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+
+        return action.execute(
+                skill,
+                skill.getAbility(),
+                data.getSkillSettings(skillID),
+                data.getSkillLevel(skillID)
+        );
+    }
+
+    public static int getPlayerAbilityCooldown(ServerPlayerEntity player, Identifier skillID) {
+        return calcAbilityInteger(player, skillID, ((skill, ability, settings, level) -> {
+            int cooldown = ability.getBaseCooldown();
+
+            for (AbilityEffect effect : ability.getEffects()) {
+                if(effect instanceof CooldownAbilityEffect coolEff && coolEff.getReqLevel() <= level) {
+                    cooldown -= coolEff.getReduceSeconds();
+                }
+            }
+
+            return Math.max(cooldown, 0);
+        }));
+    }
+
+    public static int getPlayerAbilityDuration(ServerPlayerEntity player, Identifier skillID) {
+        return calcAbilityInteger(player, skillID, ((skill, ability, settings, level) -> {
+            int duration = ability.getBaseDuration();
+
+            for (AbilityEffect effect : ability.getEffects()) {
+                if(effect instanceof DurationAbilityEffect durEff && durEff.getReqLevel() <= level) {
+                    duration += durEff.getExtraSeconds();
+                }
+            }
+
+            return duration;
+        }));
+    }
+
+    public static int getPlayerAbilityBlockConfigPoint(ServerPlayerEntity player, Identifier skillID) {
+        return calcAbilityInteger(player, skillID, ((skill, ability, settings, level) -> {
+            int points = 0;
+
+            for (AbilityEffect effect : ability.getEffects()) {
+                if(effect instanceof ShapeBreakAbilityEffect sbEff && sbEff.getReqLevel() <= level) {
+                    points += sbEff.getExtraBlocks();
+                }
+            }
+
+            return points;
+        }));
+    }
 
     public static boolean isValid(Block block, List<Either<RegistryKey<Block>, TagKey<Block>>> validBlocks) {
         return validBlocks.stream().anyMatch(either ->
@@ -90,5 +152,10 @@ public class SkillUtils {
 
     public static boolean hasEnchantment(DynamicRegistryManager registryManager, ItemStack stack, RegistryKey<Enchantment> enchantment) {
         return getEnchantmentLevel(registryManager, stack, enchantment) > 0;
+    }
+
+    @FunctionalInterface
+    public interface AbilityAction {
+        int execute(Skill skill, Ability ability, SkillSettingsData settings, int level);
     }
 }

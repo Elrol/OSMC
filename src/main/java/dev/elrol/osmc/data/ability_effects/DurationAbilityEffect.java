@@ -12,14 +12,19 @@ public class DurationAbilityEffect extends AbilityEffect {
 
     public static final MapCodec<DurationAbilityEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> getCommonCodec(instance)
             .and(Codec.INT.fieldOf("extraSeconds").forGetter(DurationAbilityEffect::getExtraSeconds))
-    .apply(instance, (abilityEffectID, reqLevel, displayName, desc, extraSeconds) -> {
-        DurationAbilityEffect data = new DurationAbilityEffect(abilityEffectID, reqLevel, extraSeconds);
+    .apply(instance, (abilityEffectID, reqLevel, togglable, displayName, desc, extraSeconds) -> {
+        DurationAbilityEffect data = new DurationAbilityEffect(abilityEffectID, reqLevel, togglable, extraSeconds);
         data.displayName = displayName;
         data.setDescription(desc);
         return data;
     }));
 
     final int extraSeconds;
+
+    public DurationAbilityEffect(Identifier abilityEffectID, int reqLevel, boolean togglable, int extraSeconds) {
+        super(abilityEffectID, reqLevel, togglable);
+        this.extraSeconds = extraSeconds;
+    }
 
     public DurationAbilityEffect(Identifier abilityEffectID, int reqLevel, int extraSeconds) {
         super(abilityEffectID, reqLevel);

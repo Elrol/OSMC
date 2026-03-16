@@ -54,7 +54,6 @@ public class OSMCEventRegistry {
     private static int ticksSinceBufferPayout = 0;
     private static final Random random = new Random();
 
-    private static final Map<UUID, Long> LAST_CLICK_CACHE = new HashMap<>();
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
@@ -257,7 +256,7 @@ public class OSMCEventRegistry {
                 });
 
                 long curTime = System.currentTimeMillis();
-                long lastTime = LAST_CLICK_CACHE.getOrDefault(player.getUuid(), 0L);
+                long lastTime = OSMCAbilityRegistry.LAST_CLICK_CACHE.getOrDefault(player.getUuid(), 0L);
 
                 if(curTime - lastTime < OSMC.CONFIG.getMillisecondsToActivateAbility()) {
                     // TODO double click activated, use ability
@@ -271,13 +270,13 @@ public class OSMCEventRegistry {
                         }
                     }
                     if(targetSkill != null)
-                        player.sendMessage(Text.of("Activate ability " + targetSkill.getAbilityID()));
+                        OSMCAbilityRegistry.activateAbility(player, targetSkill);
                     else
                         player.sendMessage(Text.of("No active ability found for current tool"));
 
-                    LAST_CLICK_CACHE.put(player.getUuid(), 0L);
+                    OSMCAbilityRegistry.LAST_CLICK_CACHE.put(player.getUuid(), 0L);
                 } else {
-                    LAST_CLICK_CACHE.put(player.getUuid(), curTime);
+                    OSMCAbilityRegistry.LAST_CLICK_CACHE.put(player.getUuid(), curTime);
                 }
             }
             return TypedActionResult.pass(playerEntity.getStackInHand(hand));

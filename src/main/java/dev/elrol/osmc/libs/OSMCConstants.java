@@ -93,6 +93,8 @@ public class OSMCConstants {
 
     // Ability Effect Type IDs
     public static final String DURATION_ABILITY_EFFECT_ID       = "duration_ability";
+    public static final String COOLDOWN_ABILITY_EFFECT_ID       = "cooldown_ability";
+    public static final String SHAPE_BREAK_ABILITY_EFFECT_ID    = "shape_break_ability";
 
     // Codecs
     public static final Codec<Either<RegistryKey<Item>, TagKey<Item>>>                          TARGET_ITEM_CODEC           = Codec.either(RegistryKey.createCodec(RegistryKeys.ITEM), TagKey.codec(RegistryKeys.ITEM));

@@ -1,0 +1,10 @@
+{
+  "id": "osmc:gui_down_button_disabled",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/page/down_disabled"
+    }
+  }
+}

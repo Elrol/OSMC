@@ -1,0 +1,10 @@
+{
+  "id": "osmc:gui_up_button",
+  "group": "osmc:menu",
+  "vanillaItem": "minecraft:paper",
+  "itemResource":{
+    "models": {
+      "default": "osmc:item/gui/page/up"
+    }
+  }
+}

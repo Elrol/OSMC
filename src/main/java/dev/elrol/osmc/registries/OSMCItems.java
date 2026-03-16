@@ -10,6 +10,10 @@ public class OSMCItems {
     public static Item LEFT_BUTTON_DISABLED;
     public static Item RIGHT_BUTTON;
     public static Item LEFT_BUTTON;
+    public static Item UP_BUTTON_DISABLED;
+    public static Item DOWN_BUTTON_DISABLED;
+    public static Item UP_BUTTON;
+    public static Item DOWN_BUTTON;
     public static Item BACK_BUTTON;
 
     public static Item GRAY_BUTTON;
@@ -54,6 +58,10 @@ public class OSMCItems {
         LEFT_BUTTON_DISABLED    = get("gui_left_button_disabled");
         RIGHT_BUTTON            = get("gui_right_button");
         LEFT_BUTTON             = get("gui_left_button");
+        UP_BUTTON_DISABLED      = get("gui_up_button_disabled");
+        DOWN_BUTTON_DISABLED    = get("gui_down_button_disabled");
+        UP_BUTTON               = get("gui_up_button");
+        DOWN_BUTTON             = get("gui_down_button");
         BACK_BUTTON             = get("gui_back_button");
 
         GRAY_BUTTON                 = get("gray_button");
