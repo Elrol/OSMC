@@ -31,7 +31,7 @@ public abstract class _MenuBase {
 
         Style style = Style.EMPTY.withFont(getMenuFont());
 
-        this.menu.setTitle(Text.literal("七七七七七七七七" + getMenuUnicode()).setStyle(style).formatted(Formatting.WHITE));
+        this.menu.setTitle(Text.literal("aaaaaaaa" + getMenuChar()).setStyle(style).formatted(Formatting.WHITE));
         this.menu.setTickCallback(this::onTick);
     }
 
@@ -88,7 +88,7 @@ public abstract class _MenuBase {
     @NotNull
     public abstract String getMenuName();
 
-    public abstract char getMenuUnicode();
+    public abstract char getMenuChar();
 
     @NotNull
     public Identifier getMenuFont() {

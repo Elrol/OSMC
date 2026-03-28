@@ -8,6 +8,7 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.*;
+import dev.elrol.osmc.data.ability_effects.ChainBreakAbilityEffect;
 import dev.elrol.osmc.data.skill_effects.StatModifierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
@@ -33,6 +34,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -42,7 +44,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -53,7 +58,7 @@ public class OSMCEventRegistry {
     private static int ticksSinceSave = 0;
     private static int ticksSinceBufferPayout = 0;
     private static final Random random = new Random();
-
+    private static final Set<UUID> CHAIN_BREAK_BLACKLIST = new HashSet<>();
 
     public static void init() {
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
@@ -118,6 +123,9 @@ public class OSMCEventRegistry {
         });
 
         SkillLevelUpEvent.EVENT.register((player, skillID, level) -> {
+            Skill skill = OSMCSkillRegistry.get(skillID);
+            if(skill == null) return;
+
             List<BoundEffect<?>> effects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.LEVEL_UP);
 
             effects.forEach(boundEffect -> {
@@ -125,6 +133,8 @@ public class OSMCEventRegistry {
                     effect.updateAttribute(player, skillID, level);
                 }
             });
+
+            SkillUtils.updateAbilityShapePoints(player, skill, level);
         });
 
         CobblemonEvents.EVOLUTION_COMPLETE.subscribe(event -> {
@@ -371,27 +381,97 @@ public class OSMCEventRegistry {
                  List<BoundSource<?>> blockBreakList = OSMCExpSourceRegistry.getSources(SkillTrigger.BLOCK_BREAK, state.getBlock());
                  boolean isSilkTouch = SkillUtils.hasEnchantment(world.getRegistryManager(), player.getMainHandStack(), Enchantments.SILK_TOUCH);
 
-                 if(blockBreakList.isEmpty()) return true;
+                 if(!blockBreakList.isEmpty()) {
 
-                 blockBreakList.forEach(boundSource -> {
-                     if(boundSource.source() instanceof BlockBreakExpSource source) {
-                         if (!source.hasProperties(state)) return;
-                         if(source.getExpGain() > 1 && isSilkTouch) return;
-                         OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.getExpGain());
+                     blockBreakList.forEach(boundSource -> {
+                         if (boundSource.source() instanceof BlockBreakExpSource source) {
+                             if (!source.hasProperties(state)) return;
+                             if (source.getExpGain() > 1 && isSilkTouch) return;
+                             OSMCPlayerDataRegistry.bufferExp(player, boundSource.skillID(), source.getExpGain());
+                         }
+                     });
+
+                     Chunk chunk = world.getChunk(pos);
+                     ChunkSection section = chunk.getSection(chunk.getSectionIndex(pos.getY()));
+                     if (section != null) {
+                         ((IPlacedTracker) section).osmc$break(
+                                 pos.getX() & 15,
+                                 pos.getY() & 15,
+                                 pos.getZ() & 15
+                         );
                      }
-                 });
+                 }
 
-                 Chunk chunk = world.getChunk(pos);
-                 ChunkSection section = chunk.getSection(chunk.getSectionIndex(pos.getY()));
-                 if(section != null) {
-                     ((IPlacedTracker)section).osmc$break(
-                             pos.getX() & 15,
-                             pos.getY() & 15,
-                             pos.getZ() & 15
-                     );
+                 Skill activeSkill = OSMCAbilityRegistry.getActiveSkill(player.getUuid());
+                 if(activeSkill != null && !CHAIN_BREAK_BLACKLIST.contains(player.getUuid())) {
+                     PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+                     SkillSettingsData skillData = data.getSkillSettings(activeSkill.getID());
+
+                     Ability ability = activeSkill.getAbility();
+                     if (ability != null) {
+                         if(ability.doesHaveShapeSettings()) {
+                             BlockHitResult hit = (BlockHitResult) player.raycast(5.0f, 0.0f, false);
+                             Direction side = hit.getSide();
+
+                             Direction gridUp;
+                             Direction gridRight;
+                             if (side.getAxis() == Direction.Axis.Y) {
+                                 gridUp = player.getHorizontalFacing();
+                                 gridRight = gridUp.rotateYCounterclockwise();
+                             } else {
+                                 gridUp = Direction.UP;
+                                 gridRight = side.rotateYClockwise();
+                             }
+
+                             CHAIN_BREAK_BLACKLIST.add(player.getUuid());
+
+                             Grid<TriState> grid = skillData.getShapeSettings();
+                             grid.get().forEach((key, tristate) -> {
+                                 if (tristate != TriState.TRUE) return;
+
+                                 int r = (int) (key >> 32);
+                                 int c = (int) (key & 0xffffffffL);
+
+                                 if (r == 0 && c == 0) return;
+
+                                 BlockPos target = pos.offset(gridUp, -r).offset(gridRight, -c);
+
+                                 if (!world.getBlockState(target).isAir()) {
+                                     world.breakBlock(target, true, player);
+                                 }
+                             });
+                             player.getMainHandStack().damage(grid.get().size(), playerEntity, EquipmentSlot.MAINHAND);
+                             CHAIN_BREAK_BLACKLIST.remove(player.getUuid());
+                         }
+
+                         List<ChainBreakAbilityEffect> chainBreakEffects = ability.getEffects(ChainBreakAbilityEffect.class);
+                         if(chainBreakEffects != null && !chainBreakEffects.isEmpty()) {
+                             boolean isValid = chainBreakEffects.stream().anyMatch((effect) -> effect.isValid(state));
+                             if(isValid) {
+                                 double breakLimit = 0;
+                                 for (ChainBreakAbilityEffect effect : chainBreakEffects) {
+                                     breakLimit += effect.calculate(data.getSkillLevel(activeSkill.getID()));
+                                 }
+                                 List<BlockPos> validBlocks = SkillUtils.findBlocks(world, pos, (int) Math.round(breakLimit));
+                                 if(!validBlocks.isEmpty()) {
+                                     CHAIN_BREAK_BLACKLIST.add(player.getUuid());
+                                     validBlocks.remove(pos);
+                                     validBlocks.forEach(blockPos -> world.breakBlock(blockPos, true, player));
+                                     CHAIN_BREAK_BLACKLIST.remove(player.getUuid());
+                                 }
+                                 player.getMainHandStack().damage(validBlocks.size(), playerEntity, EquipmentSlot.MAINHAND);
+                             }
+                         }
+                     }
                  }
              }
              return true;
+        });
+
+        PlayerBlockBreakEvents.AFTER.register((world, playerEntity, pos, state, blockEntity) -> {
+            if(playerEntity instanceof ServerPlayerEntity player) {
+
+            }
         });
 
         LootTableEvents.MODIFY.register(((key, builder, source, registries) -> {
@@ -452,6 +532,9 @@ public class OSMCEventRegistry {
 
         ServerPlayerEvents.JOIN.register((player) -> {
             OSMCPlayerDataRegistry.load(player);
+
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+            OSMCSkillRegistry.getAll().forEach((skillID, skill) -> SkillUtils.updateAbilityShapePoints(player, skill, data.getSkillLevel(skillID)));
             refreshStatModifiers(player);
         });
 

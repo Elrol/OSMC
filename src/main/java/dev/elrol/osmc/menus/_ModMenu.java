@@ -8,6 +8,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 public class _ModMenu extends SimpleGui {
 
     private Runnable tickCallback;
+    private Runnable closeCallback;
     public final String menuName;
     boolean canClose = true;
 
@@ -26,6 +27,7 @@ public class _ModMenu extends SimpleGui {
 
     @Override
     public void onClose() {
+        closeCallback.run();
         MenuCloseCallback.EVENT.invoker().onClose(this);
         super.onClose();
     }
@@ -49,5 +51,8 @@ public class _ModMenu extends SimpleGui {
 
     public void setTickCallback(Runnable callback) {
         tickCallback = callback;
+    }
+    public void setOnClose(Runnable callback) {
+        this.closeCallback = callback;
     }
 }

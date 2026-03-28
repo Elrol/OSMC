@@ -5,7 +5,6 @@ import dev.elrol.osmc.data.AbilityEffect;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.libs.MenuUtils;
 import dev.elrol.osmc.libs.ModTranslations;
-import dev.elrol.osmc.libs.SkillUtils;
 import dev.elrol.osmc.registries.OSMCAbilityRegistry;
 import dev.elrol.osmc.registries.OSMCItems;
 import dev.elrol.osmc.registries.OSMCSkillRegistry;
@@ -27,7 +26,8 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
 
     private final Skill skill;
     private Ability ability;
-    private int shapePoints = 0;
+    private final int level;
+    private boolean hasShapeSettings = false;
 
     private final Map<String, AbilityEffect> abilityEffects = new HashMap<>();
 
@@ -45,13 +45,12 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
                 abilityEffects.putAll(
                         ability.getEffects()
                                 .stream()
-                                .collect(
-                                        Collectors.toMap(
-                                                ae -> ae.getAbilityEffectID().toString(),
-                                                ae -> ae
-                                        )));
-                shapePoints = SkillUtils.getPlayerAbilityBlockConfigPoint(player, skillID);
+                                .collect(Collectors.toMap(ae -> ae.getAbilityEffectID().toString(), ae -> ae )));
+                if(ability.doesHaveShapeSettings()) hasShapeSettings = true;
             }
+            level = data.getSkillLevel(skill.getAbilityID());
+        } else {
+            level = 0;
         }
     }
 
@@ -64,14 +63,15 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
     protected void drawMenu() {
         super.drawMenu();
 
-        if(ability.doesHaveShapeSettings()) {
+        if(ability != null) {
             List<Text> lore = new ArrayList<>();
             lore.add(Text.literal("Configure what blocks are broken when using this ability"));
 
-            setSlot(0, MenuUtils.itemWithLore(OSMCItems.LIME_BUTTON, 1, Text.literal("Break Shape Menu").formatted(Formatting.GREEN), lore)
+            setSlot(0, MenuUtils.itemWithLore(hasShapeSettings ? OSMCItems.LIME_BUTTON : OSMCItems.GRAY_BUTTON, 1, Text.literal("Break Shape Menu").formatted(hasShapeSettings ? Formatting.GREEN : Formatting.DARK_GRAY), lore)
                     .setCallback(() -> {
+                        if(!hasShapeSettings) return;
                         click();
-                        ShapeCanvasMenu newMenu = new ShapeCanvasMenu(player);
+                        ShapeCanvasMenu newMenu = new ShapeCanvasMenu(player, skill.getID());
                         newMenu.open();
                     })
             );
@@ -84,14 +84,15 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
     @Override
     protected <T> GuiElementBuilder createElement(String key, Map<String, T> map) {
         AbilityEffect abilityEffect = (AbilityEffect) map.get(key);
+        boolean isUnlocked = abilityEffect.getReqLevel() <= level;
         boolean togglable = abilityEffect.isTogglable();
         boolean aeSetting = data.getAbilityEffectSetting(skill.getID(), abilityEffect.getAbilityEffectID());
-        Item item = togglable ? (aeSetting ? OSMCItems.LIME_BUTTON : OSMCItems.RED_BUTTON) : OSMCItems.GRAY_BUTTON;
+        Item item = isUnlocked ? (togglable ? (aeSetting ? OSMCItems.LIME_BUTTON : OSMCItems.RED_BUTTON) : OSMCItems.LIME_BUTTON) : OSMCItems.GRAY_BUTTON;
 
         GuiElementBuilder element = MenuUtils.item(item, 1, abilityEffect.getDisplayName());
         element.addLoreLine(ModTranslations.removeItalic(abilityEffect.getDescription()));
 
-        if(togglable)
+        if(togglable && isUnlocked)
             element.setCallback(() -> {
                 click();
                 data.toggleAbilityEffectSettings(skill.getID(),
@@ -118,7 +119,7 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
     }
 
     @Override
-    public char getMenuUnicode() {
-        return '≁';
+    public char getMenuChar() {
+        return 'd';
     }
 }

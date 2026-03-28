@@ -29,11 +29,12 @@ public class OSMCConfig {
             Codec.INT.fieldOf("autosave").forGetter(OSMCConfig::getAutoSave),
             Codec.INT.fieldOf("expPayout").forGetter(OSMCConfig::getExpPayout),
             Codec.INT.fieldOf("leaderboardCount").forGetter(OSMCConfig::getLeaderboardCount),
+            Codec.INT.optionalFieldOf("millisecondsToActivateAbility", 500).forGetter(OSMCConfig::getMillisecondsToActivateAbility),
+            Codec.INT.fieldOf("maxShapeCanvasRange").forGetter(OSMCConfig::getMaxShapeCanvasRange),
             DamageMitigationConfig.CODEC.fieldOf("damageMitigation").forGetter(OSMCConfig::getDamageMitigation),
             TrainerLevelConfig.CODEC.fieldOf("trainerLevel").forGetter(OSMCConfig::getTrainerLevel),
-            CobblemonTiers.CODEC.fieldOf("cobblemonTiers").forGetter(OSMCConfig::getCobblemonTiers),
-            Codec.INT.optionalFieldOf("millisecondsToActivateAbility", 500).forGetter(OSMCConfig::getMillisecondsToActivateAbility)
-    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, damageMitigation, trainerLevel, cobblemonTiers, millisecondsToActivateAbility) -> {
+            CobblemonTiers.CODEC.fieldOf("cobblemonTiers").forGetter(OSMCConfig::getCobblemonTiers)
+    ).apply(instance, (isDebug, sendLevelUpToGlobal, maxLevel, autosave, expPayout, leaderboardCount, millisecondsToActivateAbility, maxShapeCanvasRange, damageMitigation, trainerLevel, cobblemonTiers) -> {
         OSMCConfig data = new OSMCConfig();
 
         data.isDebug = isDebug;
@@ -43,12 +44,12 @@ public class OSMCConfig {
         data.autoSave = autosave;
         data.expPayout = expPayout;
         data.leaderboardCount = leaderboardCount;
+        data.millisecondsToActivateAbility = millisecondsToActivateAbility;
+        data.maxShapeCanvasRange = maxShapeCanvasRange;
 
         data.damageMitigation = damageMitigation;
         data.trainerLevel = trainerLevel;
         data.cobblemonTiers = cobblemonTiers;
-
-        data.millisecondsToActivateAbility = millisecondsToActivateAbility;
 
         return data;
     }));
@@ -61,6 +62,7 @@ public class OSMCConfig {
     private int expPayout = 20;
     private int leaderboardCount = 5;
     private int millisecondsToActivateAbility = 500;
+    private int maxShapeCanvasRange = 5;
 
     private DamageMitigationConfig damageMitigation = new DamageMitigationConfig();
     private TrainerLevelConfig trainerLevel = new TrainerLevelConfig();
@@ -71,20 +73,15 @@ public class OSMCConfig {
     public boolean getSendLevelUpToGlobal() { return sendLevelUpToGlobal; }
 
     public int getMaxLevel() { return maxLevel; }
-
     public int getAutoSave() { return autoSave; }
-
     public int getExpPayout() { return expPayout; }
-
     public int getLeaderboardCount() { return leaderboardCount; }
+    public int getMillisecondsToActivateAbility() { return millisecondsToActivateAbility; }
+    public int getMaxShapeCanvasRange() { return maxShapeCanvasRange; }
 
     public DamageMitigationConfig getDamageMitigation() { return damageMitigation; }
-
     public TrainerLevelConfig getTrainerLevel() { return trainerLevel; }
-
     public CobblemonTiers getCobblemonTiers() { return cobblemonTiers; }
-
-    public int getMillisecondsToActivateAbility() { return millisecondsToActivateAbility; }
 
     public void save() {
 

@@ -51,6 +51,10 @@ public class Ability {
         effects.add(effect);
     }
 
+    public <T extends AbilityEffect> List<T> getEffects(Class<T> effectClass) {
+        return effects.stream().filter(effect -> effect.getClass().equals(effectClass)).map(effect -> (T) effect).toList();
+    }
+
     public boolean isEnabled() { return enabled; }
     public boolean doesHaveShapeSettings() { return hasShapeSettings; }
     public Identifier getID() { return id; }

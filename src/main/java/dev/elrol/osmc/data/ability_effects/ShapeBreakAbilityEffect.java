@@ -11,9 +11,9 @@ import net.minecraft.util.Identifier;
 public class ShapeBreakAbilityEffect extends AbilityEffect {
 
     public static final MapCodec<ShapeBreakAbilityEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> getCommonCodec(instance)
-            .and(Codec.INT.fieldOf("extraSeconds").forGetter(ShapeBreakAbilityEffect::getExtraBlocks))
-            .apply(instance, (abilityEffectID, reqLevel, togglable, displayName, desc, extraSeconds) -> {
-                ShapeBreakAbilityEffect data = new ShapeBreakAbilityEffect(abilityEffectID, reqLevel, togglable, extraSeconds);
+            .and(Codec.INT.fieldOf("extraBlocks").forGetter(ShapeBreakAbilityEffect::getExtraBlocks))
+            .apply(instance, (abilityEffectID, reqLevel, togglable, displayName, desc, extraBlocks) -> {
+                ShapeBreakAbilityEffect data = new ShapeBreakAbilityEffect(abilityEffectID, reqLevel, togglable, extraBlocks);
                 data.displayName = displayName;
                 data.setDescription(desc);
                 return data;

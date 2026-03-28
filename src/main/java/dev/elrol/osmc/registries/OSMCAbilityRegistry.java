@@ -7,12 +7,14 @@ import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Ability;
 import dev.elrol.osmc.data.AbilityEffect;
 import dev.elrol.osmc.data.Skill;
+import dev.elrol.osmc.data.ability_effects.ChainBreakAbilityEffect;
 import dev.elrol.osmc.data.ability_effects.CooldownAbilityEffect;
 import dev.elrol.osmc.data.ability_effects.DurationAbilityEffect;
 import dev.elrol.osmc.data.ability_effects.ShapeBreakAbilityEffect;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import dev.elrol.osmc.libs.SkillUtils;
+import net.minecraft.block.Blocks;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -99,6 +101,12 @@ public class OSMCAbilityRegistry {
         }
     }
 
+    @Nullable
+    public static Skill getActiveSkill(UUID uuid) {
+        if(!hasActiveAbility(uuid)) return null;
+        return ACTIVE_ABILITY_CACHE.get(uuid);
+    }
+
     public static boolean hasActiveAbility(UUID uuid) {
         return ACTIVE_ABILITY_CACHE.containsKey(uuid);
     }
@@ -159,18 +167,30 @@ public class OSMCAbilityRegistry {
 
         DurationAbilityEffect daEffect = new DurationAbilityEffect(OSMCConstants.osmcID("example_ability_effect"), 0, 5);
         daEffect.setDisplayName(Text.literal("Example Duration Effect"));
-        daEffect.setDescription(Text.literal("This increases your ability by 5 seconds").formatted(Formatting.GRAY));
+        daEffect.setDescription(Text.literal("This increases your ability duration by 5 seconds").formatted(Formatting.GRAY));
         ability.addAbilityEffect(daEffect);
 
         CooldownAbilityEffect caEffect = new CooldownAbilityEffect(OSMCConstants.osmcID("cooldown_ability_effect"), 0, 5);
         caEffect.setDisplayName(Text.literal("Example Cooldown Effect").formatted(Formatting.BLUE));
-        caEffect.setDescription(Text.literal("This increases your ability by 5 seconds").formatted(Formatting.GRAY));
+        caEffect.setDescription(Text.literal("This decreases your ability cooldown by 5 seconds").formatted(Formatting.GRAY));
         ability.addAbilityEffect(caEffect);
 
-        ShapeBreakAbilityEffect sbEffect = new ShapeBreakAbilityEffect(OSMCConstants.osmcID("shape_break_ability_effect"), 0, 1);
+        ShapeBreakAbilityEffect sbEffect = new ShapeBreakAbilityEffect(OSMCConstants.osmcID("shape_break_ability_effect"), 0, 5);
         sbEffect.setDisplayName(Text.literal("Example Shape Break Ability").formatted(Formatting.GREEN));
-        sbEffect.setDescription(Text.literal("Increases the number of blocks you can break").formatted(Formatting.GRAY));
+        sbEffect.setDescription(Text.literal("Increases the number of blocks you can break by 5").formatted(Formatting.GRAY));
+        ability.addAbilityEffect(sbEffect);
 
+        ShapeBreakAbilityEffect sbEffect2 = new ShapeBreakAbilityEffect(OSMCConstants.osmcID("shape_break_ability_effect_2"), 5, 10);
+        sbEffect2.setDisplayName(Text.literal("Example Shape Break Ability 2").formatted(Formatting.GREEN));
+        sbEffect2.setDescription(Text.literal("Increases the number of blocks you can break by 10").formatted(Formatting.GRAY));
+        ability.addAbilityEffect(sbEffect2);
+
+        ChainBreakAbilityEffect cbEffect = new ChainBreakAbilityEffect(OSMCConstants.osmcID("chain_break_effect"), 1, "level");
+        cbEffect.addTarget(Identifier.ofVanilla("stones"));
+        cbEffect.addTarget(Blocks.STONE.getRegistryEntry().registryKey());
+        ability.addAbilityEffect(cbEffect);
+
+        register(ability);
         save(ability, server);
     }
 

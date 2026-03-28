@@ -123,5 +123,9 @@ public class PlayerSkillData {
        getSkillSettings(skillID).setAbilityEffectSetting(abilityEffectID, value);
     }
 
+    public void setSkillShapeData(Identifier skillID, Grid<TriState> grid) {
+        getSkillSettings(skillID).setShapeSettings(grid);
+    }
+
     public record SkillExpInfo(int level, long currentExp, long targetExp) {}
 }

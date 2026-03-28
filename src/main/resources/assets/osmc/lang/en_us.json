@@ -1,3 +1,8 @@
 {
-  "osmc.menu.item.name.close": "Close"
+  "osmc.menu.item.name.close": "Close",
+  "osmc.menu.item.name.pan_up": "Up",
+  "osmc.menu.item.name.pan_down": "Down",
+  "osmc.menu.item.name.pan_left": "Left",
+  "osmc.menu.item.name.pan_right": "Right",
+  "osmc.menu.item.name.center": "Center"
 }

@@ -34,7 +34,7 @@ public class DevMenu extends _MenuBase {
     }
 
     @Override
-    public char getMenuUnicode() {
-        return '≇';
+    public char getMenuChar() {
+        return 'b';
     }
 }

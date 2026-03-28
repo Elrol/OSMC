@@ -75,7 +75,7 @@ public class OSMCMenu extends _PageMenuBase4 {
     }
 
     @Override
-    public char getMenuUnicode() {
-        return '≀';
+    public char getMenuChar() {
+        return 'c';
     }
 }

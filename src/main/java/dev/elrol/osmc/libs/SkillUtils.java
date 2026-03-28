@@ -11,6 +11,7 @@ import dev.elrol.osmc.registries.OSMCCobblemonTierRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import dev.elrol.osmc.registries.OSMCSkillRegistry;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
@@ -25,11 +26,12 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Executable;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class SkillUtils {
@@ -59,6 +61,22 @@ public class SkillUtils {
 
             return Math.max(cooldown, 0);
         }));
+    }
+
+    public static void updateAbilityShapePoints(ServerPlayerEntity player, Skill skill, int level) {
+        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+        SkillSettingsData skillSettings = data.getSkillSettings(skill.getID());
+
+        Ability ability = skill.getAbility();
+        if(ability != null && ability.doesHaveShapeSettings()) {
+            int points = 0;
+            for (ShapeBreakAbilityEffect effect : ability.getEffects(ShapeBreakAbilityEffect.class)) {
+                if(effect.getReqLevel() <= level)
+                    points += effect.getExtraBlocks();
+            }
+
+            skillSettings.settShapePoints(points);
+        }
     }
 
     public static int getPlayerAbilityDuration(ServerPlayerEntity player, Identifier skillID) {
@@ -138,6 +156,49 @@ public class SkillUtils {
         }
 
         return totalLevel;
+    }
+
+    public static List<BlockPos> findBlocks(World world, BlockPos startPos, int maxBlocks) {
+        List<BlockPos> foundBlocks = new ArrayList<>();
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> toExplore = new LinkedList<>();
+
+        // Use the Block itself for more flexible matching (Log == Log)
+        Block targetBlock = world.getBlockState(startPos).getBlock();
+
+        toExplore.add(startPos);
+        visited.add(startPos);
+
+        // Standard safety cap to prevent infinite loops/crashes
+        int safetyCap = Math.min(maxBlocks, 500);
+
+        while (!toExplore.isEmpty() && foundBlocks.size() < safetyCap) {
+            BlockPos currentPos = toExplore.poll();
+            foundBlocks.add(currentPos);
+
+            BlockPos.Mutable mutableNeighbor = new BlockPos.Mutable();
+
+            for (int x = -1; x <= 1; x++) {
+                for (int y = -1; y <= 1; y++) {
+                    for (int z = -1; z <= 1; z++) {
+                        if (x == 0 && y == 0 && z == 0) continue;
+
+                        mutableNeighbor.set(currentPos.getX() + x, currentPos.getY() + y, currentPos.getZ() + z);
+
+                        BlockPos neighborImmutable = mutableNeighbor.toImmutable();
+
+                        if (!visited.contains(neighborImmutable)) {
+                            visited.add(neighborImmutable);
+
+                            if (world.getBlockState(neighborImmutable).isOf(targetBlock)) {
+                                toExplore.add(neighborImmutable);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return foundBlocks;
     }
 
     @Nullable
