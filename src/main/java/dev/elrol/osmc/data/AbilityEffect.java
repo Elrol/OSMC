@@ -20,15 +20,19 @@ public abstract class AbilityEffect {
     public Text description = Text.empty();
 
     protected AbilityEffect(Identifier abilityEffectID, int reqLevel) {
-        this.abilityEffectID = abilityEffectID;
-        this.reqLevel = reqLevel;
-        this.togglable = false;
+        this(abilityEffectID, reqLevel, false);
     }
 
     protected AbilityEffect(Identifier abilityEffectID, int reqLevel, boolean togglable) {
         this.abilityEffectID = abilityEffectID;
         this.reqLevel = reqLevel;
         this.togglable = togglable;
+    }
+
+    protected AbilityEffect(Identifier abilityEffectID, int reqLevel, boolean togglable, Text displayName, Text description) {
+        this(abilityEffectID, reqLevel, togglable);
+        this.displayName = displayName;
+        this.description = description;
     }
 
     public void setDescription(Text description) { this.description = description; }

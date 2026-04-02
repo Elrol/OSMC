@@ -34,6 +34,10 @@ public class MathUtils {
 
     // Example equation: "floor(level + 300 * 2^(level/7)) / 4"
 
+    public static double calculate(String formula) {
+        return calculate(formula, new HashMap<>());
+    }
+
     public static double calculate(String formula, Map<String, Double> variables) {
         Expression expression = EXPRESSION_CACHE.computeIfAbsent(formula, f -> new ExpressionBuilder(f)
                 .variables(variables.keySet()).build());

@@ -5,6 +5,7 @@ import dev.elrol.osmc.data.AbilityEffect;
 import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.libs.MenuUtils;
 import dev.elrol.osmc.libs.ModTranslations;
+import dev.elrol.osmc.libs.OSMCConstants;
 import dev.elrol.osmc.registries.OSMCAbilityRegistry;
 import dev.elrol.osmc.registries.OSMCItems;
 import dev.elrol.osmc.registries.OSMCSkillRegistry;
@@ -48,7 +49,7 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
                                 .collect(Collectors.toMap(ae -> ae.getAbilityEffectID().toString(), ae -> ae )));
                 if(ability.doesHaveShapeSettings()) hasShapeSettings = true;
             }
-            level = data.getSkillLevel(skill.getAbilityID());
+            level = data.getSkillLevel(skill.getID());
         } else {
             level = 0;
         }
@@ -67,14 +68,26 @@ public class OSMCSkillMenu extends _PageMenuBase5 {
             List<Text> lore = new ArrayList<>();
             lore.add(Text.literal("Configure what blocks are broken when using this ability"));
 
-            setSlot(0, MenuUtils.itemWithLore(hasShapeSettings ? OSMCItems.LIME_BUTTON : OSMCItems.GRAY_BUTTON, 1, Text.literal("Break Shape Menu").formatted(hasShapeSettings ? Formatting.GREEN : Formatting.DARK_GRAY), lore)
-                    .setCallback(() -> {
-                        if(!hasShapeSettings) return;
-                        click();
-                        ShapeCanvasMenu newMenu = new ShapeCanvasMenu(player, skill.getID());
-                        newMenu.open();
-                    })
-            );
+            if(hasShapeSettings) {
+                setSlot(0, MenuUtils.itemWithLore(OSMCItems.LIME_BUTTON, 1, Text.literal("Break Shape Menu").formatted(Formatting.GREEN), lore)
+                        .setCallback(() -> {
+                            if(!hasShapeSettings) return;
+                            click();
+                            ShapeCanvasMenu newMenu = new ShapeCanvasMenu(player, skill.getID());
+                            newMenu.open();
+                        })
+                );
+
+                boolean shapeEnabled = data.getAbilityEffectSetting(skill.getID(), OSMCConstants.osmcID("shape_break_enabled"));
+                setSlot(9, MenuUtils.itemWithLore(shapeEnabled ? OSMCItems.LIME_BUTTON : OSMCItems.RED_BUTTON, 1, Text.literal(shapeEnabled ? "Break Shape Enabled" : "Break Shape Disabled").formatted(shapeEnabled ? Formatting.GREEN : Formatting.RED), lore)
+                        .setCallback(() -> {
+                            if (!hasShapeSettings) return;
+                            click();
+                            data.setAbilityEffectSetting(skill.getID(), OSMCConstants.osmcID("shape_break_enabled"), !shapeEnabled);
+                            drawMenu();
+                        })
+                );
+            }
         }
 
         drawItems(abilityEffects);

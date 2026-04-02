@@ -9,6 +9,8 @@ import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.*;
 import dev.elrol.osmc.data.ability_effects.ChainBreakAbilityEffect;
+import dev.elrol.osmc.data.ability_effects.ParticleAbilityEffect;
+import dev.elrol.osmc.data.ability_effects.StatModifierAbilityEffect;
 import dev.elrol.osmc.data.skill_effects.StatModifierSkillEffect;
 import dev.elrol.osmc.data.exp.*;
 import dev.elrol.osmc.data.exp.cobblemon.*;
@@ -18,6 +20,7 @@ import dev.elrol.osmc.data.functions.MobDropLootFunction;
 import dev.elrol.osmc.events.*;
 import dev.elrol.osmc.interfaces.IPlacedTracker;
 import dev.elrol.osmc.libs.MathUtils;
+import dev.elrol.osmc.libs.OSMCConstants;
 import dev.elrol.osmc.libs.SkillUtils;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
@@ -40,6 +43,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -61,6 +65,30 @@ public class OSMCEventRegistry {
     private static final Set<UUID> CHAIN_BREAK_BLACKLIST = new HashSet<>();
 
     public static void init() {
+
+        AbilityEvent.ACTIVATE.register((player, skill) -> {
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+            int level = data.getSkillLevel(skill.getID());
+
+            player.playSound(SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH);
+
+            Ability ability = skill.getAbility();
+            ability.getEffects(StatModifierAbilityEffect.class).forEach(effect -> {
+                if(effect.getReqLevel() <= level) {
+                    effect.apply(player, level);
+                }
+            });
+        });
+
+        AbilityEvent.DEACTIVATE.register((player, skill) -> {
+            player.playSound(SoundEvents.ENTITY_FIREWORK_ROCKET_BLAST);
+
+            Ability ability = skill.getAbility();
+            ability.getEffects(StatModifierAbilityEffect.class).forEach(effect -> {
+                effect.remove(player);
+            });
+        });
+
         CommandRegistrationCallback.EVENT.register(OSMCCommandRegistry::init);
 
         HarvestEvent.EVENT.register(((player, state, pos) -> {
@@ -409,7 +437,7 @@ public class OSMCEventRegistry {
 
                      Ability ability = activeSkill.getAbility();
                      if (ability != null) {
-                         if(ability.doesHaveShapeSettings()) {
+                         if(ability.doesHaveShapeSettings() && data.getAbilityEffectSetting(activeSkill.getID(), OSMCConstants.osmcID("shape_break_enabled"))) {
                              BlockHitResult hit = (BlockHitResult) player.raycast(5.0f, 0.0f, false);
                              Direction side = hit.getSide();
 
@@ -445,15 +473,15 @@ public class OSMCEventRegistry {
                          }
 
                          List<ChainBreakAbilityEffect> chainBreakEffects = ability.getEffects(ChainBreakAbilityEffect.class);
-                         if(chainBreakEffects != null && !chainBreakEffects.isEmpty()) {
+                         if (chainBreakEffects != null && !chainBreakEffects.isEmpty()) {
                              boolean isValid = chainBreakEffects.stream().anyMatch((effect) -> effect.isValid(state));
-                             if(isValid) {
+                             if (isValid) {
                                  double breakLimit = 0;
                                  for (ChainBreakAbilityEffect effect : chainBreakEffects) {
                                      breakLimit += effect.calculate(data.getSkillLevel(activeSkill.getID()));
                                  }
                                  List<BlockPos> validBlocks = SkillUtils.findBlocks(world, pos, (int) Math.round(breakLimit));
-                                 if(!validBlocks.isEmpty()) {
+                                 if (!validBlocks.isEmpty()) {
                                      CHAIN_BREAK_BLACKLIST.add(player.getUuid());
                                      validBlocks.remove(pos);
                                      validBlocks.forEach(blockPos -> world.breakBlock(blockPos, true, player));
@@ -492,17 +520,36 @@ public class OSMCEventRegistry {
 
             int autoSaveDelay = OSMC.CONFIG.getAutoSave() * 1200;
 
-            if(ticksSinceSave >= autoSaveDelay) {
+            if (ticksSinceSave >= autoSaveDelay) {
                 ticksSinceSave = 0;
 
                 OSMC.LOGGER.info("Autosaving Data");
                 OSMCPlayerDataRegistry.save();
             }
 
-            if(ticksSinceBufferPayout >= OSMC.CONFIG.getExpPayout()) {
+            if (ticksSinceBufferPayout >= OSMC.CONFIG.getExpPayout()) {
                 ticksSinceBufferPayout = 0;
                 OSMCPlayerDataRegistry.payBuffer(server);
             }
+
+            server.getPlayerManager().getPlayerList().forEach(player -> {
+                Skill activeSkill = OSMCAbilityRegistry.getActiveSkill(player.getUuid());
+                if (activeSkill != null) {
+                    Ability ability = activeSkill.getAbility();
+                    if (ability != null) {
+                        List<ParticleAbilityEffect> particleEffects = ability.getEffects(ParticleAbilityEffect.class);
+                        if (particleEffects != null && !particleEffects.isEmpty()) {
+                            PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+                            SkillSettingsData settingsData = data.getSkillSettings(activeSkill.getID());
+                            particleEffects.forEach(particleEffect -> {
+                                if(!settingsData.getAbilityEffectSetting(particleEffect.getAbilityEffectID())) return;
+                                ParticleAbilityEffect.ParticleSettings settings = particleEffect.settings();
+                                settings.spawn(player);
+                            });
+                        }
+                    }
+                }
+            });
         });
 
         ServerPlayerEvents.AFTER_RESPAWN.register(((oldPlayer, player, b) -> {
@@ -547,12 +594,20 @@ public class OSMCEventRegistry {
         List<BoundEffect<?>> effects = OSMCSkillEffectRegistry.getEffects(SkillTrigger.LOGIN);
 
         data.getSkillExpMap().keySet().forEach(skillID -> {
-            int level = data.getSkillLevel(skillID);
-            effects.forEach(boundEffect -> {
-                if(boundEffect.skillID().equals(skillID) && boundEffect.effect() instanceof StatModifierSkillEffect effect) {
-                    effect.updateAttribute(player, skillID, level);
-                }
-            });
+            Skill skill = OSMCSkillRegistry.get(skillID);
+
+            if(skill != null) {
+                int level = data.getSkillLevel(skillID);
+                effects.forEach(boundEffect -> {
+                    if(boundEffect.skillID().equals(skillID) && boundEffect.effect() instanceof StatModifierSkillEffect effect) {
+                        effect.updateAttribute(player, skillID, level);
+                    }
+                });
+
+                skill.getAbility().getEffects(StatModifierAbilityEffect.class).forEach(effect -> {
+                    effect.remove(player);
+                });
+            }
         });
     }
 }

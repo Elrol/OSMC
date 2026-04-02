@@ -7,14 +7,16 @@ import dev.elrol.osmc.OSMC;
 import dev.elrol.osmc.data.Ability;
 import dev.elrol.osmc.data.AbilityEffect;
 import dev.elrol.osmc.data.Skill;
-import dev.elrol.osmc.data.ability_effects.ChainBreakAbilityEffect;
-import dev.elrol.osmc.data.ability_effects.CooldownAbilityEffect;
-import dev.elrol.osmc.data.ability_effects.DurationAbilityEffect;
-import dev.elrol.osmc.data.ability_effects.ShapeBreakAbilityEffect;
+import dev.elrol.osmc.data.ability_effects.*;
+import dev.elrol.osmc.events.AbilityEvent;
 import dev.elrol.osmc.libs.JsonUtils;
 import dev.elrol.osmc.libs.OSMCConstants;
 import dev.elrol.osmc.libs.SkillUtils;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -72,7 +74,7 @@ public class OSMCAbilityRegistry {
 
         ACTIVE_ABILITY_CACHE.put(player.getUuid(), skill);
         player.sendMessage(Text.empty().append(Text.literal("Activated ability: ").formatted(Formatting.GREEN)).append(ability.getDisplayName()));
-        player.playSound(SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH);
+        AbilityEvent.ACTIVATE.invoker().activate(player, skill);
 
         int durationSeconds = ability.getBaseDuration();
         for (AbilityEffect effect : ability.getEffects()) {
@@ -96,8 +98,8 @@ public class OSMCAbilityRegistry {
             if(ability != null) name = ability.getDisplayName();
 
             player.sendMessage(Text.empty().append(Text.literal("Ability wore off ").formatted(Formatting.RED)).append(name));
-            player.playSound(SoundEvents.ENTITY_FIREWORK_ROCKET_BLAST);
             ABILITY_COOLDOWN_CACHE.put(player.getUuid(), System.currentTimeMillis());
+            AbilityEvent.DEACTIVATE.invoker().deactivate(player, skill);
         }
     }
 
@@ -189,6 +191,12 @@ public class OSMCAbilityRegistry {
         cbEffect.addTarget(Identifier.ofVanilla("stones"));
         cbEffect.addTarget(Blocks.STONE.getRegistryEntry().registryKey());
         ability.addAbilityEffect(cbEffect);
+
+        ParticleAbilityEffect paEffect = new ParticleAbilityEffect(OSMCConstants.osmcID("particle_effect"), 1, true, Text.literal("Particle Effect"), Text.literal("Displays particles when using the skill"), new ParticleAbilityEffect.ParticleSettings(1.0f, 2.0f, 20, "#ff0000", Identifier.ofVanilla("dust")));
+        ability.addAbilityEffect(paEffect);
+
+        StatModifierAbilityEffect smEffect = new StatModifierAbilityEffect(OSMCConstants.osmcID("stat_mod"), 1, true, Text.literal("Health Modifier"), Text.literal("Adds 10 hearts"), "", Identifier.ofVanilla("generic.max_health"), EntityAttributeModifier.Operation.ADD_VALUE);
+        ability.addAbilityEffect(smEffect);
 
         register(ability);
         save(ability, server);

@@ -27,7 +27,7 @@ public class _ModMenu extends SimpleGui {
 
     @Override
     public void onClose() {
-        closeCallback.run();
+        if(closeCallback != null) closeCallback.run();
         MenuCloseCallback.EVENT.invoker().onClose(this);
         super.onClose();
     }
