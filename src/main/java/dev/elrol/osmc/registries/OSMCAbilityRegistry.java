@@ -104,6 +104,11 @@ public class OSMCAbilityRegistry {
     }
 
     @Nullable
+    public static Skill getActiveSkill(ServerPlayerEntity player) {
+        return getActiveSkill(player.getUuid());
+    }
+
+    @Nullable
     public static Skill getActiveSkill(UUID uuid) {
         if(!hasActiveAbility(uuid)) return null;
         return ACTIVE_ABILITY_CACHE.get(uuid);

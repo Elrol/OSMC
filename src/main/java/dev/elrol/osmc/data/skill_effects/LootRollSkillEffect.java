@@ -40,9 +40,10 @@ public class LootRollSkillEffect extends SkillEffect {
         lootTables.add(tableID);
     }
 
-    public float calculateChanceDrop(int skillLevel) {
+    public float calculateChanceDrop(int skillLevel, double multiplier) {
         return (float) MathUtils.calculate(getChanceFormula(), Map.of(
-                "level", (double) skillLevel));
+                "level", (double) skillLevel,
+                "multiplier", multiplier));
     }
 
     @Override

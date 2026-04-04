@@ -96,6 +96,7 @@ public class OSMCConstants {
     public static final String CHAIN_BREAK_ABILITY_EFFECT_ID    = "chain_break_ability";
     public static final String PARTICLE_ABILITY_EFFECT_ID       = "particle_ability";
     public static final String STAT_MODIFIER_ABILITY_EFFECT_ID  = "stat_modifier_ability";
+    public static final String LOOT_MULTIPLIER_ABILITY_EFFECT_ID= "loot_multiplier_ability";
 
     // Codecs
     public static final Codec<Either<RegistryKey<Item>, TagKey<Item>>>                          TARGET_ITEM_CODEC           = Codec.either(RegistryKey.createCodec(RegistryKeys.ITEM), TagKey.codec(RegistryKeys.ITEM));

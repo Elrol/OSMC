@@ -2,10 +2,13 @@ package dev.elrol.osmc.mixin;
 
 import dev.elrol.osmc.data.BoundEffect;
 import dev.elrol.osmc.data.PlayerSkillData;
+import dev.elrol.osmc.data.Skill;
 import dev.elrol.osmc.data.SkillTrigger;
+import dev.elrol.osmc.data.ability_effects.LootMultiplierAbilityEffect;
 import dev.elrol.osmc.data.skill_effects.LootRollSkillEffect;
 import dev.elrol.osmc.libs.MathUtils;
 import dev.elrol.osmc.libs.OSMCLootTracker;
+import dev.elrol.osmc.registries.OSMCAbilityRegistry;
 import dev.elrol.osmc.registries.OSMCPlayerDataRegistry;
 import dev.elrol.osmc.registries.OSMCSkillEffectRegistry;
 import net.minecraft.item.ItemStack;
@@ -47,6 +50,24 @@ public class LootTableMixin {
                 .orElse(OSMCLootTracker.get());
     }
 
+    @Unique
+    private double getChanceMultiplier(ServerPlayerEntity player, PlayerSkillData data, List<Identifier> lootTables) {
+        double multiplier = 1.0F;
+
+        if(OSMCAbilityRegistry.hasActiveAbility(player)) {
+            Skill skill = OSMCAbilityRegistry.getActiveSkill(player);
+            if(skill != null) {
+                for (LootMultiplierAbilityEffect effect : skill.getAbility().getEffects(LootMultiplierAbilityEffect.class)) {
+                    int level = data.getSkillLevel(skill.getID());
+                    if(level >= effect.getReqLevel() && lootTables.stream().anyMatch(lootTable -> effect.getLootTables().contains(lootTable))) {
+                        multiplier += effect.calculateChanceDrop(level);
+                    }
+                }
+            }
+        }
+        return multiplier;
+    }
+
     @Inject(method = "generateLoot(Lnet/minecraft/loot/context/LootContextParameterSet;JLjava/util/function/Consumer;)V", at = @At("HEAD"))
     public void osmc$generateLootParameters(LootContextParameterSet parameters, long seed, Consumer<ItemStack> lootConsumer, CallbackInfo ci) {
         if(IS_PROCESSING.get()) return;
@@ -61,6 +82,8 @@ public class LootTableMixin {
         if(player == null) return;
 
         if(player.getServer() != null) {
+            PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
+
             Identifier tableID = getId(player.getServer().getReloadableRegistries());
             if (tableID == null) return;
 
@@ -70,12 +93,11 @@ public class LootTableMixin {
 
                 boundEffects.forEach(boundEffect -> {
                     if (boundEffect.effect() instanceof LootRollSkillEffect effect) {
-                        PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
                         Identifier skillID = boundEffect.skillID();
                         int skillLevel = data.getSkillLevel(skillID);
                         int reqLevel = boundEffect.effect().getReqLevel();
                         if(skillLevel < reqLevel) return;
-                        double chance = effect.calculateChanceDrop(skillLevel);
+                        double chance = effect.calculateChanceDrop(skillLevel, getChanceMultiplier(player, data, ((LootRollSkillEffect) boundEffect.effect()).getLootTables()));
                         int extraRolls = (int) chance;
                         if (MathUtils.percentChance((float) (chance - extraRolls))) extraRolls++;
 
@@ -122,7 +144,7 @@ public class LootTableMixin {
                         PlayerSkillData data = OSMCPlayerDataRegistry.get(player.getUuid());
                         Identifier skillID = boundEffect.skillID();
                         int skillLevel = data.getSkillLevel(skillID);
-                        double chance = effect.calculateChanceDrop(skillLevel);
+                        double chance = effect.calculateChanceDrop(skillLevel, getChanceMultiplier(player, data, ((LootRollSkillEffect) boundEffect.effect()).getLootTables()));
                         int extraRolls = (int) chance;
                         if(MathUtils.percentChance((float)(chance - extraRolls))) extraRolls++;
 

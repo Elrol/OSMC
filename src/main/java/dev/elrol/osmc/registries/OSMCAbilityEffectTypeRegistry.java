@@ -14,6 +14,7 @@ public class OSMCAbilityEffectTypeRegistry {
     public static final AbilityEffectType<ChainBreakAbilityEffect> CHAIN_BREAK_ABILITY_EFFECT = register(OSMCConstants.CHAIN_BREAK_ABILITY_EFFECT_ID, new AbilityEffectType<>(ChainBreakAbilityEffect.CODEC));
     public static final AbilityEffectType<ParticleAbilityEffect> PARTICLE_ABILITY_EFFECT = register(OSMCConstants.PARTICLE_ABILITY_EFFECT_ID, new AbilityEffectType<>(ParticleAbilityEffect.CODEC));
     public static final AbilityEffectType<StatModifierAbilityEffect> STAT_MODIFIER_ABILITY_EFFECT = register(OSMCConstants.STAT_MODIFIER_ABILITY_EFFECT_ID, new AbilityEffectType<>(StatModifierAbilityEffect.CODEC));
+    public static final AbilityEffectType<LootMultiplierAbilityEffect> LOOT_MULTIPLIER_ABILITY_EFFECT = register(OSMCConstants.LOOT_MULTIPLIER_ABILITY_EFFECT_ID, new AbilityEffectType<>(LootMultiplierAbilityEffect.CODEC));
 
     public static void init() {}
 
